@@ -63,7 +63,6 @@ def seed_data():
             period_end=date(today.year, today.month, 28),
             due_date=date(today.year, today.month, 10),
             close_date=date(today.year, today.month, 15),
-            status=ReportingPeriod.STATUS_OPEN,
         )
         return form
 

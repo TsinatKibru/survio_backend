@@ -167,17 +167,12 @@ def seed_data():
     form_salt = create_form_with_period("Monthly Salt Production Data", 'salt')
 
     s1_salt = Section.objects.create(form=form_salt, title="TYPE OF PRODUCT AND PRODUCTION CAPACITY", order=1)
-    # Block 1
-    Question.objects.create(section=s1_salt, label="Product Type 1", question_type='select', order=1)
-    # Note: Adding options later in bulk or specifically
-    Question.objects.create(section=s1_salt, label="Installed Capacity 1 (ton/day)", question_type='number', order=2)
-    Question.objects.create(section=s1_salt, label="Max. Attained Capacity 1 (ton/day)", question_type='number', order=3)
-    Question.objects.create(section=s1_salt, label="Actual Production 1 (ton/day)", question_type='number', order=4)
-    # Block 2
-    Question.objects.create(section=s1_salt, label="Product Type 2", question_type='select', order=5)
-    Question.objects.create(section=s1_salt, label="Installed Capacity 2 (ton/day)", question_type='number', order=6)
-    Question.objects.create(section=s1_salt, label="Max. Attained Capacity 2 (ton/day)", question_type='number', order=7)
-    Question.objects.create(section=s1_salt, label="Actual Production 2 (ton/day)", question_type='number', order=8)
+    # 4 Slots for Product Types
+    for i in range(1, 5):
+        Question.objects.create(section=s1_salt, label=f"Product Type {i}", question_type='select', order=(i-1)*4 + 1)
+        Question.objects.create(section=s1_salt, label=f"Installed Capacity {i} (ton/day)", question_type='number', order=(i-1)*4 + 2)
+        Question.objects.create(section=s1_salt, label=f"Max. Attained Capacity {i} (ton/day)", question_type='number', order=(i-1)*4 + 3)
+        Question.objects.create(section=s1_salt, label=f"Actual Production {i} (ton/day)", question_type='number', order=(i-1)*4 + 4)
 
     s2_salt = Section.objects.create(form=form_salt, title="PACKAGING MATERIALS AND AMOUNT", order=2)
     Question.objects.create(section=s2_salt, label="Packaging Material Type", question_type='select', order=1)
@@ -214,11 +209,11 @@ def seed_data():
     for i, u in enumerate(["K.G", "Ton", "Quintal", "Pcs"]):
         QuestionOption.objects.create(question=unit_q, label=u, value=u.lower(), order=i)
 
-    # Add product types to s1_salt Product questions
-    for q_label in ["Product Type 1", "Product Type 2"]:
-        p_q = Question.objects.get(section=s1_salt, label=q_label)
-        for i, p in enumerate(["Table Salt", "Common Salt", "Non-iodized Salt", "Lick Salt"]):
-            QuestionOption.objects.create(question=p_q, label=p, value=p.lower().replace(' ', '_'), order=i)
+    # Add product types to s1_salt Product questions (all 4 slots)
+    for i in range(1, 5):
+        p_q = Question.objects.get(section=s1_salt, label=f"Product Type {i}")
+        for j, p in enumerate(["Table Salt", "Common Salt", "Non-iodized Salt", "Lick Salt"]):
+            QuestionOption.objects.create(question=p_q, label=p, value=p.lower().replace(' ', '_'), order=j)
 
     print("Seeding completed successfully!")
 

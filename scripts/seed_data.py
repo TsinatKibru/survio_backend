@@ -175,9 +175,10 @@ def seed_data():
         Question.objects.create(section=s1_salt, label=f"Actual Production {i} (ton/day)", question_type='number', order=(i-1)*4 + 4)
 
     s2_salt = Section.objects.create(form=form_salt, title="PACKAGING MATERIALS AND AMOUNT", order=2)
-    Question.objects.create(section=s2_salt, label="Packaging Material Type", question_type='select', order=1)
-    Question.objects.create(section=s2_salt, label="Amount", question_type='decimal', order=2)
-    Question.objects.create(section=s2_salt, label="Unit", question_type='select', order=3)
+    for i in range(1, 4):
+        Question.objects.create(section=s2_salt, label=f"Packaging Material Type {i}", question_type='select', order=(i-1)*3 + 1)
+        Question.objects.create(section=s2_salt, label=f"Amount {i}", question_type='decimal', order=(i-1)*3 + 2)
+        Question.objects.create(section=s2_salt, label=f"Unit {i}", question_type='select', order=(i-1)*3 + 3)
 
     s3_salt = Section.objects.create(form=form_salt, title="SALT PROCESSING INFO", order=3)
     Question.objects.create(section=s3_salt, label="Washed Salt Extraction rate (%)", question_type='decimal', order=1)
@@ -201,13 +202,17 @@ def seed_data():
     Question.objects.create(section=s7_salt, label="Unwashed Salt (Birr/kg)", question_type='decimal', order=2)
     Question.objects.create(section=s7_salt, label="Potassium iodate (Birr/kg)", question_type='decimal', order=3)
 
-    # Bulk create options for specific types
-    # (Simplified for the demonstration - we can add precise options if needed)
-    print("Seeding options and units...")
-    # Add units to s2_salt Unit question
-    unit_q = Question.objects.get(section=s2_salt, label="Unit")
-    for i, u in enumerate(["K.G", "Ton", "Quintal", "Pcs"]):
-        QuestionOption.objects.create(question=unit_q, label=u, value=u.lower(), order=i)
+    # Add units and materials for all packaging slots (3 slots)
+    for i in range(1, 4):
+        mat_q = Question.objects.get(section=s2_salt, label=f"Packaging Material Type {i}")
+        for j, m in enumerate(["HDPE", "PP bag", "Paper", "Plastic jar", "Other"]):
+            QuestionOption.objects.create(question=mat_q, label=m, value=m.lower().replace(' ', '_'), order=j)
+        
+        unit_q = Question.objects.get(section=s2_salt, label=f"Unit {i}")
+        for j, u in enumerate(["K.G", "Ton", "Quintal", "Pcs"]):
+            QuestionOption.objects.create(question=unit_q, label=u, value=u.lower(), order=j)
+
+    # Add product types to s1_salt Product questions (all 4 slots)
 
     # Add product types to s1_salt Product questions (all 4 slots)
     for i in range(1, 5):

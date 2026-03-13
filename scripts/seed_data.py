@@ -161,57 +161,64 @@ def seed_data():
     Question.objects.create(section=s4_flour, label="Challenges related to Food Fortification?", question_type='textarea', order=7)
 
     # ==========================================
-    # SALT FORM
+    # SALT FORM (V3: Industry Detailed)
     # ==========================================
-    print("Creating SALT survey form...")
+    print("Creating SALT survey form (Detailed)...")
     form_salt = create_form_with_period("Monthly Salt Production Data", 'salt')
 
-    s3_salt = Section.objects.create(form=form_salt, title="SALT PRODUCTION", order=1)
-    # Product Type Repeatable (Simulated with a few slots)
-    for i in range(1, 4):
-        q = Question.objects.create(section=s3_salt, label=f"Select Product Type {i}", question_type='select', order=i)
-        for j, opt in enumerate(["Table Salt", "Common Salt", "Non-iodized Salt", "Lick Salt (animal feed)", "Others"]):
-            QuestionOption.objects.create(question=q, label=opt, value=opt.lower().replace(' ', '_'), order=j)
-        Question.objects.create(section=s3_salt, label=f"Installed (ton/day) - {i}", question_type='number', order=i+3)
-        Question.objects.create(section=s3_salt, label=f"Max. attained (ton/day) - {i}", question_type='number', order=i+6)
-        Question.objects.create(section=s3_salt, label=f"Actual (ton/day) - {i}", question_type='number', order=i+9)
+    s1_salt = Section.objects.create(form=form_salt, title="TYPE OF PRODUCT AND PRODUCTION CAPACITY", order=1)
+    # Block 1
+    Question.objects.create(section=s1_salt, label="Product Type 1", question_type='select', order=1)
+    # Note: Adding options later in bulk or specifically
+    Question.objects.create(section=s1_salt, label="Installed Capacity 1 (ton/day)", question_type='number', order=2)
+    Question.objects.create(section=s1_salt, label="Max. Attained Capacity 1 (ton/day)", question_type='number', order=3)
+    Question.objects.create(section=s1_salt, label="Actual Production 1 (ton/day)", question_type='number', order=4)
+    # Block 2
+    Question.objects.create(section=s1_salt, label="Product Type 2", question_type='select', order=5)
+    Question.objects.create(section=s1_salt, label="Installed Capacity 2 (ton/day)", question_type='number', order=6)
+    Question.objects.create(section=s1_salt, label="Max. Attained Capacity 2 (ton/day)", question_type='number', order=7)
+    Question.objects.create(section=s1_salt, label="Actual Production 2 (ton/day)", question_type='number', order=8)
 
-    # Packaging Materials
-    s4_salt = Section.objects.create(form=form_salt, title="SALT PACKAGING", order=3)
-    for i in range(1, 3):
-        q = Question.objects.create(section=s4_salt, label=f"Select Packaging Material {i}", question_type='select', order=i)
-        for j, opt in enumerate(["High Density Ethylene (HDPE)", "Polypropylene bag (PP bag)", "Paper", "Plastic jar", "Poly Ethylene", "Low density Polyethylene (LDPE)", "Corrugated box", "Glass", "Other"]):
-            QuestionOption.objects.create(question=q, label=opt, value=opt.lower().replace(' ', '_'), order=j)
-        Question.objects.create(section=s4_salt, label=f"Amount - {i}", question_type='decimal', order=i+2)
-        qu = Question.objects.create(section=s4_salt, label=f"Unit - {i}", question_type='select', order=i+4)
-        for j, opt in enumerate(["kg/month", "pcs/month", "ton/month", "quintal/month"]):
-            QuestionOption.objects.create(question=qu, label=opt, value=opt, order=j)
+    s2_salt = Section.objects.create(form=form_salt, title="PACKAGING MATERIALS AND AMOUNT", order=2)
+    Question.objects.create(section=s2_salt, label="Packaging Material Type", question_type='select', order=1)
+    Question.objects.create(section=s2_salt, label="Amount", question_type='decimal', order=2)
+    Question.objects.create(section=s2_salt, label="Unit", question_type='select', order=3)
 
-    s5_salt = Section.objects.create(form=form_salt, title="Additional Product Info (SALT)", order=4)
-    salt_extra = [
-        ("Washed Salt Extraction rate (%)", "decimal"),
-        ("Unwashed Salt Extraction rate (%)", "decimal"),
-        ("Potassium iodate (kg) stock", "decimal"),
-        ("Addition rate of potassium iodate per kg of salt", "decimal"),
-        ("Male Skilled personnel (number)", "number"),
-        ("Female Skilled personnel (number)", "number"),
-    ]
-    for i, (label, q_type) in enumerate(salt_extra):
-        Question.objects.create(section=s5_salt, label=label, question_type=q_type, order=i+1)
+    s3_salt = Section.objects.create(form=form_salt, title="SALT PROCESSING INFO", order=3)
+    Question.objects.create(section=s3_salt, label="Washed Salt Extraction rate (%)", question_type='decimal', order=1)
+    Question.objects.create(section=s3_salt, label="Unwashed Salt Extraction rate (%)", question_type='decimal', order=2)
 
-    q_outsource = Question.objects.create(section=s5_salt, label="Does the company outsource quality analysis?", question_type='yes_no', order=7)
+    s4_salt = Section.objects.create(form=form_salt, title="INPUTS USED PER DAY (QUINTAL)", order=4)
+    Question.objects.create(section=s4_salt, label="Potassium iodate (kg)", question_type='decimal', order=1)
+    Question.objects.create(section=s4_salt, label="Addition rate of potassium iodate per kg of salt", question_type='decimal', order=2)
+
+    s5_salt = Section.objects.create(form=form_salt, title="SKILLED PERSONNEL (LABORATORY)", order=5)
+    Question.objects.create(section=s5_salt, label="Male (Number)", question_type='number', order=1)
+    Question.objects.create(section=s5_salt, label="Female (Number)", question_type='number', order=2)
+
+    s6_salt = Section.objects.create(form=form_salt, title="QUALITY ANALYSIS", order=6)
+    q_outsource = Question.objects.create(section=s6_salt, label="Does the company outsource quality analysis?", question_type='yes_no', order=1)
     QuestionOption.objects.create(question=q_outsource, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_outsource, label="No", value="no", order=2)
 
-    salt_prices = [
-        ("Washed Salt (Birr/kg)", "decimal"),
-        ("Unwashed Salt (Birr/kg)", "decimal"),
-        ("Potassium iodate (Birr/kg)", "decimal"),
-    ]
-    for i, (label, q_type) in enumerate(salt_prices):
-        Question.objects.create(section=s5_salt, label=f"Price: {label}", question_type=q_type, order=i+8)
+    s7_salt = Section.objects.create(form=form_salt, title="AVERAGE RAW MATERIAL PURCHASE PRICE", order=7)
+    Question.objects.create(section=s7_salt, label="Washed Salt (Birr/kg)", question_type='decimal', order=1)
+    Question.objects.create(section=s7_salt, label="Unwashed Salt (Birr/kg)", question_type='decimal', order=2)
+    Question.objects.create(section=s7_salt, label="Potassium iodate (Birr/kg)", question_type='decimal', order=3)
 
-    Question.objects.create(section=s5_salt, label="Challenges related to Food Fortification?", question_type='textarea', order=11)
+    # Bulk create options for specific types
+    # (Simplified for the demonstration - we can add precise options if needed)
+    print("Seeding options and units...")
+    # Add units to s2_salt Unit question
+    unit_q = Question.objects.get(section=s2_salt, label="Unit")
+    for i, u in enumerate(["K.G", "Ton", "Quintal", "Pcs"]):
+        QuestionOption.objects.create(question=unit_q, label=u, value=u.lower(), order=i)
+
+    # Add product types to s1_salt Product questions
+    for q_label in ["Product Type 1", "Product Type 2"]:
+        p_q = Question.objects.get(section=s1_salt, label=q_label)
+        for i, p in enumerate(["Table Salt", "Common Salt", "Non-iodized Salt", "Lick Salt"]):
+            QuestionOption.objects.create(question=p_q, label=p, value=p.lower().replace(' ', '_'), order=i)
 
     print("Seeding completed successfully!")
 

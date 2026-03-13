@@ -1,6 +1,7 @@
 import os
 import django
 import sys
+import re
 from datetime import date
 
 # Add the project root to sys.path
@@ -93,7 +94,7 @@ def seed_data():
     q_oil_pack = Question.objects.create(section=s3_oil, label="Edible oil Packaging Material Type", question_type='select', order=7)
     oil_pack_opts = ["Polypropylene bag with food grade inner liner (kg/month)", "Polypropylene bag", "PET bottle", "Jerrycan", "Tinplate", "Glass bottle", "Bulk (Tanker)", "Others"]
     for i, opt in enumerate(oil_pack_opts):
-        QuestionOption.objects.create(question=q_oil_pack, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+        QuestionOption.objects.create(question=q_oil_pack, label=opt, value=re.sub(r'[^a-zA-Z0-9_]', '', opt.lower().replace(' ', '_')), order=i)
     
     Question.objects.create(section=s3_oil, label="Amount (Packaging)", question_type='decimal', order=8)
 
@@ -130,7 +131,7 @@ def seed_data():
     )
     challenge_opts = ["Micro feeder operation (calibration, speed adjustment)", "Maintenance", "Electrical (power) connection systems", "Pre blend preparation", "Pre blend loading", "Proper functionality inspection", "Other"]
     for i, opt in enumerate(challenge_opts):
-        QuestionOption.objects.create(question=q_cont_challenges, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+        QuestionOption.objects.create(question=q_cont_challenges, label=opt, value=re.sub(r'[^a-zA-Z0-9_]', '', opt.lower().replace(' ', '_')), order=i)
 
     # --- Batch Dependents ---
     q_batch_doc = Question.objects.create(
@@ -154,7 +155,7 @@ def seed_data():
     )
     time_opts = ["Less than 30 min", "30 - 60 min", "60 - 90 min", "Above 90 min"]
     for i, opt in enumerate(time_opts):
-        QuestionOption.objects.create(question=q_batch_time, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+        QuestionOption.objects.create(question=q_batch_time, label=opt, value=re.sub(r'[^a-zA-Z0-9_]', '', opt.lower().replace(' ', '_')), order=i)
 
     Question.objects.create(
         section=s4_oil, 

@@ -17,7 +17,13 @@ schema_view = get_schema_view(
    permission_classes=(permissions.AllowAny,),
 )
 
+from django.http import JsonResponse
+
+def home_view(request):
+    return JsonResponse({"status": "running", "message": "Survio API is alive"})
+
 urlpatterns = [
+    path('', home_view),
     path('admin/', survio_admin_site.urls),
     path('api/auth/', include('accounts.urls')),
     path('api/forms/', include('forms_builder.urls')),

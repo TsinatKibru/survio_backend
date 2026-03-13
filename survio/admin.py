@@ -6,9 +6,9 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 class SurvioAdminSite(admin.AdminSite):
-    site_header = "Survio Administration"
-    site_title = "Survio Admin"
-    index_title = "Welcome to Survio Admin"
+    site_header = "Food and Beverage Industry R&D Center"
+    site_title = "FBRDC Admin"
+    index_title = "Management Dashboard"
     index_template = "admin/index.html"
 
     def index(self, request, extra_context=None):

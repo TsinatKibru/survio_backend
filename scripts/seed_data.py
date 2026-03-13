@@ -235,24 +235,89 @@ def seed_data():
     
     Question.objects.create(section=s3_flour, label="Amount (Packaging)", question_type='textarea', order=8)
 
-    s4_flour = Section.objects.create(form=form_flour, title="Additional Product Info (WHEAT FLOUR)", order=3)
+    s4_flour = Section.objects.create(form=form_flour, title="FORTIFICATION TECHNOLOGY", order=3)
     q_flour_tech = Question.objects.create(section=s4_flour, label="Type of technology used for wheat flour fortification", question_type='multiselect', order=1)
-    for i, opt in enumerate(["Continuous (Micro feeder and screw conveyor)", "Batch Mixer"]):
-        QuestionOption.objects.create(question=q_flour_tech, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+    
+    flour_tech_opts = [
+        ("Continuous (Micro feeder and screw conveyor)", "continuous"),
+        ("Batch Mixer", "batch")
+    ]
+    for i, (label, val) in enumerate(flour_tech_opts):
+        QuestionOption.objects.create(question=q_flour_tech, label=label, value=val, order=i)
 
+    # --- Continuous Dependents ---
+    q_fl_cont_rate = Question.objects.create(
+        section=s4_flour, 
+        label="If the technology is continuous, do you measure and record flour production rate", 
+        question_type='yes_no', 
+        depends_on=q_flour_tech, 
+        depends_on_value="continuous",
+        order=2
+    )
+    QuestionOption.objects.create(question=q_fl_cont_rate, label="Yes", value="yes", order=1)
+    QuestionOption.objects.create(question=q_fl_cont_rate, label="No", value="no", order=2)
+
+    q_fl_cont_speed = Question.objects.create(
+        section=s4_flour, 
+        label="If the technology is continuous, do you periodically adjust and record micro feeder speed", 
+        question_type='yes_no', 
+        depends_on=q_flour_tech, 
+        depends_on_value="continuous",
+        order=3
+    )
+    QuestionOption.objects.create(question=q_fl_cont_speed, label="Yes", value="yes", order=1)
+    QuestionOption.objects.create(question=q_fl_cont_speed, label="No", value="no", order=2)
+
+    q_fl_cont_challenges = Question.objects.create(
+        section=s4_flour, 
+        label="If the technology is continuous, challenges in relation to micro feeder", 
+        question_type='multiselect', 
+        depends_on=q_flour_tech, 
+        depends_on_value="continuous",
+        order=4
+    )
+    fl_challenge_opts = ["Micro feeder operation (calibration, speed adjustment)", "Maintenance", "Electrical (power) connection systems", "Proper functionality inspection", "Other"]
+    for i, opt in enumerate(fl_challenge_opts):
+        QuestionOption.objects.create(question=q_fl_cont_challenges, label=opt, value=re.sub(r'[^a-zA-Z0-9_]', '', opt.lower().replace(' ', '_')), order=i)
+
+    # --- Batch Dependents ---
+    q_fl_batch_doc = Question.objects.create(
+        section=s4_flour, 
+        label="If the technology is batch, do you have proper documentation for mixing time", 
+        question_type='yes_no', 
+        depends_on=q_flour_tech, 
+        depends_on_value="batch",
+        order=5
+    )
+    QuestionOption.objects.create(question=q_fl_batch_doc, label="Yes", value="yes", order=1)
+    QuestionOption.objects.create(question=q_fl_batch_doc, label="No", value="no", order=2)
+
+    q_fl_batch_time = Question.objects.create(
+        section=s4_flour, 
+        label="If the technology is batch, indicate mixing time", 
+        question_type='select', 
+        depends_on=q_flour_tech, 
+        depends_on_value="batch",
+        order=6
+    )
+    fl_time_opts = ["Less than 5 min", "5 min", "10 min", "15 min", "20 min and above"]
+    for i, opt in enumerate(fl_time_opts):
+        QuestionOption.objects.create(question=q_fl_batch_time, label=opt, value=re.sub(r'[^a-zA-Z0-9_]', '', opt.lower().replace(' ', '_')), order=i)
+
+    s5_flour = Section.objects.create(form=form_flour, title="ADDITIONAL PRODUCT INFO (WHEAT FLOUR)", order=4)
     flour_yesno = [
         "Do you have skilled personnel to conduct flour fortification production?",
         "Do you conduct fortification lab analysis?",
         "Do you conduct induction training?"
     ]
     for i, label in enumerate(flour_yesno):
-        q = Question.objects.create(section=s4_flour, label=label, question_type='yes_no', order=i+2)
+        q = Question.objects.create(section=s5_flour, label=label, question_type='yes_no', order=i+1)
         QuestionOption.objects.create(question=q, label="Yes", value="yes", order=1)
         QuestionOption.objects.create(question=q, label="No", value="no", order=2)
 
-    Question.objects.create(section=s4_flour, label="Plan to produce fortified wheat flour for the next month (ton/month)", question_type='decimal', order=5)
-    Question.objects.create(section=s4_flour, label="Amount of PREMIX to be utilized for the next month (kg/month)", question_type='decimal', order=6)
-    Question.objects.create(section=s4_flour, label="Challenges related to Food Fortification?", question_type='textarea', order=7)
+    Question.objects.create(section=s5_flour, label="Plan to produce fortified wheat flour for the next month (ton/month)", question_type='decimal', order=4)
+    Question.objects.create(section=s5_flour, label="Amount of PREMIX to be utilized for the next month (kg/month)", question_type='decimal', order=5)
+    Question.objects.create(section=s5_flour, label="Challenges related to Food Fortification?", question_type='textarea', order=6)
 
     # ==========================================
     # SALT FORM (V3: Industry Detailed)

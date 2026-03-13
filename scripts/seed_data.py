@@ -97,24 +97,117 @@ def seed_data():
     
     Question.objects.create(section=s3_oil, label="Amount (Packaging)", question_type='decimal', order=8)
 
-    s4_oil = Section.objects.create(form=form_oil, title="Additional Product Info (EDIBLE OIL)", order=3)
+    s4_oil = Section.objects.create(form=form_oil, title="FORTIFICATION TECHNOLOGY", order=3)
     q_oil_tech = Question.objects.create(section=s4_oil, label="Type of technology used for edible oil fortification", question_type='multiselect', order=1)
-    for i, opt in enumerate(["Continuous (Micro feeder pump and recirculation pipe system)", "Batch Mixer", "Two Stage"]):
-        QuestionOption.objects.create(question=q_oil_tech, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+    
+    tech_opts = [
+        ("Continuous (Micro feeder pump and recirculation pipe system)", "continuous"),
+        ("Batch Mixer", "batch"),
+        ("Two Stage", "two_stage")
+    ]
+    for i, (label, val) in enumerate(tech_opts):
+        QuestionOption.objects.create(question=q_oil_tech, label=label, value=val, order=i)
 
+    # --- Continuous Dependents ---
+    q_cont_record = Question.objects.create(
+        section=s4_oil, 
+        label="If the technology is continuous, do you measure and record edible oil production rate", 
+        question_type='yes_no', 
+        depends_on=q_oil_tech, 
+        depends_on_value="continuous",
+        order=2
+    )
+    QuestionOption.objects.create(question=q_cont_record, label="Yes", value="yes", order=1)
+    QuestionOption.objects.create(question=q_cont_record, label="No", value="no", order=2)
+
+    q_cont_challenges = Question.objects.create(
+        section=s4_oil, 
+        label="If the technology is continuous, challenges in relation to micro feeder", 
+        question_type='multiselect', 
+        depends_on=q_oil_tech, 
+        depends_on_value="continuous",
+        order=3
+    )
+    challenge_opts = ["Micro feeder operation (calibration, speed adjustment)", "Maintenance", "Electrical (power) connection systems", "Pre blend preparation", "Pre blend loading", "Proper functionality inspection", "Other"]
+    for i, opt in enumerate(challenge_opts):
+        QuestionOption.objects.create(question=q_cont_challenges, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+
+    # --- Batch Dependents ---
+    q_batch_doc = Question.objects.create(
+        section=s4_oil, 
+        label="If the technology is batch, do you have proper documentation for mixing time", 
+        question_type='yes_no', 
+        depends_on=q_oil_tech, 
+        depends_on_value="batch",
+        order=4
+    )
+    QuestionOption.objects.create(question=q_batch_doc, label="Yes", value="yes", order=1)
+    QuestionOption.objects.create(question=q_batch_doc, label="No", value="no", order=2)
+
+    q_batch_time = Question.objects.create(
+        section=s4_oil, 
+        label="If the technology is batch, indicate mixing time", 
+        question_type='select', 
+        depends_on=q_oil_tech, 
+        depends_on_value="batch",
+        order=5
+    )
+    time_opts = ["Less than 30 min", "30 - 60 min", "60 - 90 min", "Above 90 min"]
+    for i, opt in enumerate(time_opts):
+        QuestionOption.objects.create(question=q_batch_time, label=opt, value=opt.lower().replace(' ', '_'), order=i)
+
+    Question.objects.create(
+        section=s4_oil, 
+        label="If the Technology is Batch, indicate RPM.", 
+        question_type='decimal', 
+        depends_on=q_oil_tech, 
+        depends_on_value="batch",
+        order=6
+    )
+
+    # --- Two Stage Dependents ---
+    q_two_doc = Question.objects.create(
+        section=s4_oil, 
+        label="If the technology is Two Stage, do you have proper documentation for mixing time", 
+        question_type='yes_no', 
+        depends_on=q_oil_tech, 
+        depends_on_value="two_stage",
+        order=7
+    )
+    QuestionOption.objects.create(question=q_two_doc, label="Yes", value="yes", order=1)
+    QuestionOption.objects.create(question=q_two_doc, label="No", value="no", order=2)
+
+    Question.objects.create(
+        section=s4_oil, 
+        label="If the Technology is Two Stage, indicate RPM.", 
+        question_type='decimal', 
+        depends_on=q_oil_tech, 
+        depends_on_value="two_stage",
+        order=8
+    )
+    Question.objects.create(
+        section=s4_oil, 
+        label="Volumetric/Pump Flow Rate(m3/h) For the Circulation Pump", 
+        question_type='decimal', 
+        depends_on=q_oil_tech, 
+        depends_on_value="two_stage",
+        order=9
+    )
+
+    s5_oil = Section.objects.create(form=form_oil, title="ADDITIONAL PRODUCT INFO (EDIBLE OIL)", order=4)
     q_oil_yesno = [
         "Do you have skilled personnel to conduct edible oil fortification production?",
         "Do you conduct FF lab analysis?",
         "Do you conduct induction training?"
     ]
     for i, label in enumerate(q_oil_yesno):
-        q = Question.objects.create(section=s4_oil, label=label, question_type='yes_no', order=i+2)
+        q = Question.objects.create(section=s5_oil, label=label, question_type='yes_no', order=i+1)
         QuestionOption.objects.create(question=q, label="Yes", value="yes", order=1)
         QuestionOption.objects.create(question=q, label="No", value="no", order=2)
 
-    Question.objects.create(section=s4_oil, label="Plan to produce fortified edible oil for the next month (ton/month)", question_type='decimal', order=5)
-    Question.objects.create(section=s4_oil, label="Amount of fortificant to be utilized for the next month (kg/month)", question_type='decimal', order=6)
-    Question.objects.create(section=s4_oil, label="Challenges related to Food Fortification?", question_type='textarea', order=7)
+    Question.objects.create(section=s5_oil, label="Plan to produce fortified edible oil for the next month (ton/month)", question_type='decimal', order=4)
+    Question.objects.create(section=s5_oil, label="Amount of fortificant to be utilized for the next month (kg/month)", question_type='decimal', order=5)
+    Question.objects.create(section=s5_oil, label="Challenges related to Food Fortification?", question_type='textarea', order=6)
 
     # ==========================================
     # WHEAT FLOUR FORM

@@ -104,7 +104,7 @@ class SubmissionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
         fields = [
-            'id', 'form', 'status', 'period_label', 'food_category', 'industry_name',
+            'id', 'form', 'status', 'period', 'period_label', 'food_category', 'industry_name',
             'submitted_by_name', 'submitted_at', 'is_late', 'created_at', 'is_editable'
         ]
 
@@ -121,7 +121,7 @@ class SubmissionDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
         fields = [
-            'id', 'form', 'status', 'period_label', 'food_category', 'industry_name',
+            'id', 'form', 'status', 'period', 'period_label', 'food_category', 'industry_name',
             'answers', 'submitted_at', 'is_late', 'created_at', 'updated_at', 'is_editable'
         ]
 

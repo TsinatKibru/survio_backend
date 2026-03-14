@@ -39,3 +39,4 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f'Prefs for {self.user}'
+

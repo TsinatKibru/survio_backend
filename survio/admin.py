@@ -48,9 +48,14 @@ class SurvioAdminSite(admin.AdminSite):
         heatmap_data = []
         for cat in Category.objects.filter(is_active=True):
             f_ids = Form.objects.filter(category=cat, is_active=True).values_list('id', flat=True)
-            required = ReportingPeriod.objects.filter(form_id__in=f_ids, period_start__lte=today).count()
-            submitted = submissions_qs.filter(food_category=cat.name).count()
+            required_periods = ReportingPeriod.objects.filter(form_id__in=f_ids, period_start__lte=today).count()
+            inds_in_cat = Industry.objects.filter(category=cat, is_active=True).count()
+            required = required_periods * inds_in_cat
+            
+            submitted = submissions_qs.filter(food_category=cat.name, status='submitted').count()
             rate = int((submitted / required * 100)) if required > 0 else 0
+            if rate > 100: rate = 100
+            
             heatmap_data.append({
                 "name": cat.name,
                 "rate": rate,
@@ -60,12 +65,14 @@ class SurvioAdminSite(admin.AdminSite):
 
         # 2. Industry Performance
         industry_perf = []
-        for ind in Industry.objects.filter(is_active=True)[:10]: # Limit to top 10
+        for ind in Industry.objects.filter(is_active=True):
             q_assigned = Q(assignments__industry=ind) | Q(category=ind.category) | Q(category__isnull=True)
             f_ids = Form.objects.filter(q_assigned, is_active=True).values_list('id', flat=True).distinct()
             required = ReportingPeriod.objects.filter(form_id__in=f_ids, period_start__lte=today).count()
-            submitted = submissions_qs.filter(organization=ind).count()
+            submitted = submissions_qs.filter(organization=ind, status='submitted').count()
             rate = int((submitted / required * 100)) if required > 0 else 0
+            if rate > 100: rate = 100
+            
             industry_perf.append({
                 "name": ind.name,
                 "category": ind.category.name if ind.category else "General",
@@ -73,7 +80,19 @@ class SurvioAdminSite(admin.AdminSite):
                 "submitted": submitted,
                 "required": required
             })
-        extra_context['industries'] = sorted(industry_perf, key=lambda x: x['rate'], reverse=True)
+            
+        # Sort by rate descending (outside the loop, so it's always defined)
+        sorted_industries = sorted(industry_perf, key=lambda x: x['rate'], reverse=True)
+        
+        # Check if 'see_all' is requested
+        show_all = request.GET.get('see_all') == 'true'
+        if not show_all:
+            extra_context['industries'] = sorted_industries[:10]
+            extra_context['has_more_industries'] = len(sorted_industries) > 10
+        else:
+            extra_context['industries'] = sorted_industries
+            extra_context['has_more_industries'] = False
+        extra_context['showing_all'] = show_all
         
         # 3. Dynamic Success Rate for the Top Card
         # Calculated as total submissions / total required across all active categories

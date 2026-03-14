@@ -143,6 +143,9 @@ class FormListSerializer(serializers.ModelSerializer):
         user = request.user if request else None
         
         period = _get_active_period(obj, user)
+        if period:
+            return ReportingPeriodSerializer(period).data
+            
         upcoming = (
             obj.periods
             .filter(period_start__gt=timezone.now().date())
@@ -155,7 +158,8 @@ class FormListSerializer(serializers.ModelSerializer):
 
     def get_is_submitted(self, obj):
         request = self.context.get('request')
-        return _is_submitted_by(obj, request.user if request else None)
+        forced_period = self.context.get('forced_period')
+        return _is_submitted_by(obj, request.user if request else None, period=forced_period)
 
 
 class FormDetailSerializer(serializers.ModelSerializer):
@@ -179,8 +183,16 @@ class FormDetailSerializer(serializers.ModelSerializer):
 
     def get_current_period(self, obj):
         request = self.context.get('request')
+        forced_period = self.context.get('forced_period')
+        if forced_period:
+            data = ReportingPeriodSerializer(forced_period).data
+            # Check if backlog
+            newest_active = obj.periods.filter(period_start__lte=timezone.now().date(), close_date__gte=timezone.now().date()).order_by('-period_start').first()
+            if newest_active and forced_period.period_start < newest_active.period_start:
+                data['is_backlog'] = True
+            return data
+
         user = request.user if request else None
-        
         period = _get_active_period(obj, user)
         if period:
             data = ReportingPeriodSerializer(period).data
@@ -188,6 +200,7 @@ class FormDetailSerializer(serializers.ModelSerializer):
             if newest_active and period.period_start < newest_active.period_start:
                 data['is_backlog'] = True
             return data
+            
         upcoming = (
             obj.periods
             .filter(period_start__gt=timezone.now().date())
@@ -200,7 +213,8 @@ class FormDetailSerializer(serializers.ModelSerializer):
 
     def get_is_submitted(self, obj):
         request = self.context.get('request')
-        return _is_submitted_by(obj, request.user if request else None)
+        forced_period = self.context.get('forced_period')
+        return _is_submitted_by(obj, request.user if request else None, period=forced_period)
 
 
 class FormAssignmentSerializer(serializers.ModelSerializer):

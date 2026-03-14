@@ -214,7 +214,16 @@
 
     <!-- Industry Performance Table -->
     <div class="chart-container" style="margin-bottom: 30px;">
-        <h3>Industry Performance (Top 10)</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0;">Industry Performance {% if not showing_all %}(Top 10){% endif %}</h3>
+            {% if has_more_industries %}
+            <a href="?see_all=true"
+                style="font-size: 13px; color: #4e73df; font-weight: bold; text-decoration: none;">See All</a>
+            {% elif showing_all %}
+            <a href="?" style="font-size: 13px; color: #4e73df; font-weight: bold; text-decoration: none;">Show Top
+                10</a>
+            {% endif %}
+        </div>
         <table class="performance-table">
             <thead>
                 <tr>

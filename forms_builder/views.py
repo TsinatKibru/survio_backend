@@ -34,6 +34,15 @@ class FormDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Form.objects.filter(is_active=True)
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        period_id = self.request.query_params.get('period')
+        if period_id:
+            from .models import ReportingPeriod
+            period = get_object_or_404(ReportingPeriod, id=period_id, form_id=self.kwargs['pk'])
+            context['forced_period'] = period
+        return context
+
 
 class FormCreateView(generics.CreateAPIView):
     serializer_class = FormDetailSerializer

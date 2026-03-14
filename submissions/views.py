@@ -60,9 +60,14 @@ class MySubmissionsView(generics.ListAPIView):
         ).select_related('form')
 
 
-class SubmissionDetailView(generics.RetrieveAPIView):
-    serializer_class = SubmissionDetailSerializer
+class SubmissionDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            from .serializers import SubmissionUpdateSerializer
+            return SubmissionUpdateSerializer
+        return SubmissionDetailSerializer
 
     def get_queryset(self):
         if self.request.user.is_admin_or_above:
@@ -204,10 +209,17 @@ class GlobalAnalyticsView(APIView):
         for cat in categories:
             # Find forms for this category
             form_ids = Form.objects.filter(category=cat, is_active=True).values_list('id', flat=True)
-            required = ReportingPeriod.objects.filter(form_id__in=form_ids, period_start__lte=today).count()
+            required_periods = ReportingPeriod.objects.filter(form_id__in=form_ids, period_start__lte=today).count()
+            
+            # Count industries in this category to calculate total expected submissions
+            inds_in_cat = Industry.objects.filter(category=cat, is_active=True).count()
+            required = required_periods * inds_in_cat
+
             submitted = Submission.objects.filter(food_category=cat.name, status=Submission.STATUS_SUBMITTED).count()
             
             rate = int((submitted / required * 100)) if required > 0 else 0
+            if rate > 100: rate = 100
+            
             category_stats.append({
                 "id": cat.id,
                 "name": cat.name,
@@ -226,6 +238,7 @@ class GlobalAnalyticsView(APIView):
             submitted = Submission.objects.filter(organization=ind, status=Submission.STATUS_SUBMITTED).count()
             
             rate = int((submitted / required * 100)) if required > 0 else 0
+            if rate > 100: rate = 100
             industry_performance.append({
                 "name": ind.name,
                 "category": ind.category.name if ind.category else "Uncategorized",

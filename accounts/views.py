@@ -8,7 +8,7 @@ from .models import Industry, Category
 from .serializers import (
     RegisterSerializer, UserProfileSerializer,
     IndustrySerializer, CategorySerializer, AdminUserSerializer,
-    CustomTokenObtainPairSerializer
+    CustomTokenObtainPairSerializer, ChangePasswordSerializer
 )
 from .permissions import IsSuperAdmin, IsAdminOrAbove
 
@@ -45,6 +45,21 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            if not user.check_password(serializer.data.get('old_password')):
+                return Response({'old_password': ['Wrong password.']}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user.set_password(serializer.data.get('new_password'))
+            user.save()
+            return Response({'detail': 'Password updated successfully.'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class IndustryListView(generics.ListAPIView):
     serializer_class = IndustrySerializer

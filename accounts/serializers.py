@@ -117,3 +117,13 @@ class AdminUserSerializer(serializers.ModelSerializer):
             'date_joined',
         ]
         read_only_fields = ['id', 'date_joined']
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "New passwords do not match."})
+        return data

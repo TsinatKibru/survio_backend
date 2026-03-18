@@ -151,7 +151,7 @@
                                     hx-get="?drill_down_q={{ item.id }}&drill_down_label={{ item.label|urlencode }}&category={{ selected_cat.code }}{% for sid in selected_industry_ids %}&industry_ids={{ sid }}{% endfor %}&start_date={{ start_date }}&end_date={{ end_date }}"
                                     hx-target="#drilldown-modal-content"
                                     onclick="document.getElementById('drilldown-modal').classList.remove('hidden')">
-                                    {{ item.avg }}{% if item.type == 'yes_no' %}%Y{% endif %}
+                                    {{ item.avg }}{% if item.type == 'yes_no' %}%{% endif %}
                                 </button>
                             </td>
                             <td class="px-6 py-4 text-center text-gray-500 font-medium" style="white-space: nowrap;">

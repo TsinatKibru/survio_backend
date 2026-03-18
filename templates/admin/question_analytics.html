@@ -1,0 +1,165 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+{% block extrahead %}
+{{ block.super }}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="{% static 'css/premium_dashboard.css' %}?v=2" />
+{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  @media (min-width: 1025px) {
+    .dashboard #content {
+      width: auto !important;
+      box-sizing: border-box;
+    }
+  }
+  #content-main {
+    padding: 2px;
+  }
+  .htmx-requesting #dashboard-content {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Modal — appended directly to body so no parent can trap it */
+  #drilldown-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    box-sizing: border-box;
+  }
+
+  #drilldown-modal.hidden {
+    display: none;
+  }
+
+  #drilldown-modal-inner {
+    background: var(--darkened-bg, #fff) !important;
+    color: var(--body-fg, #111) !important;
+    width: 100%;
+    max-width: 860px;
+    max-height: 88vh;
+    border-radius: 1.25rem;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HTMX swap target must also be flex-column so children can scroll */
+  #drilldown-modal-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+</style>
+{% endblock %} {% block content %}
+<div id="content-main">
+  <div
+    class="page-header"
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    "
+  >
+    <div>
+      <h1 style="margin: 0; font-size: 22px; font-weight: 800">
+        🏭 Strategic Data Explorer
+      </h1>
+      <p
+        style="
+          margin: 4px 0 0;
+          color: var(--body-quiet-color, #858796);
+          font-size: 13px;
+        "
+      >
+        Strategic auditing and fortification analysis dashboard
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center">
+      <a
+        href="{% url 'survio_admin:index' %}"
+        style="
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--primary, #417690);
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        "
+        >← Back to Dashboard</a
+      >
+    </div>
+  </div>
+
+  <!-- Main Dashboard Container -->
+  <div id="dashboard-content">
+    {% include 'admin/question_analytics_partial.html' %}
+  </div>
+</div>
+
+<!-- Modal is initially here but gets teleported to <body> by the script below -->
+<div id="drilldown-modal" class="hidden">
+  <div id="drilldown-modal-inner">
+    <div id="drilldown-modal-content">
+      <div style="padding: 4rem; text-align: center; color: #9ca3af">
+        <div
+          style="
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--primary, #417690);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+          "
+        ></div>
+        <p
+          style="
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 11px;
+            color: #111;
+          "
+        >
+          Loading verification data...
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Teleport modal to <body> to escape ANY parent stacking context
+  (function () {
+    var modal = document.getElementById("drilldown-modal");
+    document.body.appendChild(modal);
+
+    // Close on backdrop click
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) modal.classList.add("hidden");
+    });
+  })();
+
+  // Close on Escape key
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape")
+      document.getElementById("drilldown-modal").classList.add("hidden");
+  });
+</script>
+{% endblock %}

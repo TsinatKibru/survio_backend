@@ -1,0 +1,4 @@
+# Ignore Django HTML templates — Prettier corrupts Django template tags
+# by splitting {% block ... %} across multiple lines, causing TemplateSyntaxError
+templates/**/*.html
+**/templates/**/*.html

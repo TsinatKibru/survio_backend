@@ -8,21 +8,34 @@ class IndustryAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'is_active')
     search_fields = ('name',)
     prepopulated_fields = {'code': ('name',)}
+    list_per_page = 10
 
 @admin.register(Category, site=survio_admin_site)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'is_active')
     search_fields = ('name',)
     prepopulated_fields = {'code': ('name',)}
+    list_per_page = 10
 
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'role', 'industry', 'category', 'is_staff')
     list_filter = ('role', 'is_staff', 'industry', 'category')
-    fieldsets = UserAdmin.fieldsets + (
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Permissions', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'user_permissions'),
+        }),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
         ('Survio Roles & Profile', {'fields': ('role', 'phone', 'organization', 'position', 'industry', 'category', 'profile_picture', 'is_onboarded')}),
     )
-    add_fieldsets = UserAdmin.add_fieldsets + (
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2'),
+        }),
         ('Survio Roles & Profile', {'fields': ('role', 'industry', 'category', 'is_onboarded')}),
     )
+    list_per_page = 10
 
 survio_admin_site.register(User, CustomUserAdmin)

@@ -1,0 +1,261 @@
+<div class="animate-in fade-in">
+
+    <!-- Category Tabs — moved here to sync with HTMX updates -->
+    <div class="tab-container mb-8">
+        {% for cat_code, cat_label in category_choices %}
+        <a href="?category={{ cat_code }}{% for sid in selected_industry_ids %}&industry_ids={{ sid }}{% endfor %}&start_date={{ start_date }}&end_date={{ end_date }}"
+            class="tab-link {% if selected_cat.code == cat_code %}active{% endif %}"
+            hx-get="?category={{ cat_code }}{% for sid in selected_industry_ids %}&industry_ids={{ sid }}{% endfor %}&start_date={{ start_date }}&end_date={{ end_date }}"
+            hx-target="#dashboard-content" hx-push-url="true">
+            {{ cat_label }}
+        </a>
+        {% endfor %}
+    </div>
+
+
+    <!-- Active filter badges -->
+    {% if selected_industry_ids or start_date %}
+    <div class="flex flex-wrap gap-2 mb-4 px-1">
+        {% for ind in industries %}
+        {% if ind.id in selected_industry_ids %}
+        <span
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase"
+            style="background: rgba(65, 118, 144, 0.15); color: var(--primary);">
+            {{ ind.name }}
+            <a href="?category={{ selected_cat.code }}&start_date={{ start_date }}&end_date={{ end_date }}{% for sid in selected_industry_ids %}{% if sid != ind.id %}&industry_ids={{ sid }}{% endif %}{% endfor %}"
+                style="text-decoration:none; color: inherit;">✕</a>
+        </span>
+        {% endif %}
+        {% endfor %}
+        {% if selected_industry_ids %}
+        <a href="?category={{ selected_cat.code }}&start_date={{ start_date }}&end_date={{ end_date }}"
+            style="font-size: 10px; color: var(--text-muted); align-self: center; text-decoration: none;">Clear
+            filters</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content (Simplified Single Column) -->
+    <div class="space-y-8">
+        <!-- Filter Form (HTMX) -->
+        <div class="card filter-card">
+            <div class="card-body">
+                <form hx-get="?" hx-target="#dashboard-content" hx-push-url="true" class="filter-form" id="filter-form">
+                    <input type="hidden" name="category" value="{{ selected_cat.code|default:'' }}">
+
+                    <!-- Industry Checkbox Dropdown -->
+                    <div class="input-group">
+                        <label class="input-label">Industries</label>
+                        <div class="relative" id="ind-dropdown-container">
+                            <button type="button" id="ind-dropdown-btn" class="input-field text-left cursor-pointer"
+                                style="width: 100%; height: 38px; display: flex; justify-content: space-between; align-items: center; padding: 0 0.75rem; box-sizing: border-box;"
+                                onclick="toggleIndDropdown()">
+                                <span id="ind-dropdown-label"
+                                    style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 0.5rem;">
+                                    {% if selected_industry_ids %}
+                                    {{ selected_industry_ids|length }} selected
+                                    {% else %}
+                                    All Industries
+                                    {% endif %}
+                                </span>
+                                <svg width="16" height="16"
+                                    style="width: 16px; height: 16px; flex-shrink: 0; color: #94a3b8;" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="ind-dropdown"
+                                class="hidden absolute z-20 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl overflow-y-auto"
+                                style="max-height: 220px;">
+                                <label
+                                    class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
+                                    {% if selected_industry_ids %}
+                                    <input type="checkbox" id="chk-all" onchange="toggleAllIndustries(this)">
+                                    {% else %}
+                                    <input type="checkbox" id="chk-all" onchange="toggleAllIndustries(this)" checked>
+                                    {% endif %}
+                                    <span class="text-sm font-medium">All Industries</span>
+                                </label>
+                                {% for ind in industries %}
+                                <label class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                                    {% if ind.id in selected_industry_ids %}
+                                    <input type="checkbox" name="industry_ids" value="{{ ind.id }}" checked
+                                        onchange="onIndustryChange()">
+                                    {% else %}
+                                    <input type="checkbox" name="industry_ids" value="{{ ind.id }}"
+                                        onchange="onIndustryChange()">
+                                    {% endif %}
+                                    <span class="text-sm">{{ ind.name }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="input-group">
+                        <label class="input-label">Date Range</label>
+                        <div class="flex gap-2">
+                            <input type="date" name="start_date" value="{{ start_date }}" class="input-field"
+                                onchange="htmx.trigger('#filter-form', 'submit')">
+                            <input type="date" name="end_date" value="{{ end_date }}" class="input-field"
+                                onchange="htmx.trigger('#filter-form', 'submit')">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <button type="submit" class="btn-primary">Aggregate Data</button>
+                        <a href="?category={{ selected_cat.code }}"
+                            style="font-size: 0.75rem; text-align: center; color: var(--text-muted); text-decoration: none;">Reset
+                            to Defaults</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Strategic Data Explorer Table -->
+        <div class="card">
+            <div class="card-header border-b border-gray-100 flex justify-between items-center">
+                <div class="card-title">
+                    <span style="width: 4px; height: 20px; background: var(--primary); border-radius: 2px;"></span>
+                    Strategic Data Explorer
+                </div>
+                <div class="text-[10px] bg-gray-100 px-2 py-1 rounded-full font-bold text-gray-500 uppercase">
+                    Verifiable Math Enabled
+                </div>
+            </div>
+            <div class="card-body p-0 overflow-hidden">
+                {% if explorer_data %}
+                <table class="w-full text-left text-sm" style="border-collapse: collapse; table-layout: auto;">
+                    <thead class="bg-gray-50 text-[10px] text-gray-500 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-3 font-bold" style="width: 100%;">Question / Indicator</th>
+                            <th class="px-6 py-3 font-bold text-center" style="white-space: nowrap;">Avg (Verify)</th>
+                            <th class="px-6 py-3 font-bold text-center" style="white-space: nowrap;">Sum</th>
+                            <th class="px-6 py-3 font-bold text-right" style="white-space: nowrap;">Sample (N)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for item in explorer_data %}
+                        <tr class="hover:bg-gray-50 transition-colors group">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900">{{ item.label }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <button
+                                    class="inline-block px-3 py-1 rounded font-bold transition-all cursor-pointer border-b-2"
+                                    style="width: 60px; text-align: center; background: rgba(65, 118, 144, 0.1); color: var(--primary); border-color: rgba(65, 118, 144, 0.2);"
+                                    onmouseover="this.style.background='var(--primary)'; this.style.color='#fff';"
+                                    onmouseout="this.style.background='rgba(65, 118, 144, 0.1)'; this.style.color='var(--primary)';"
+                                    hx-get="?drill_down_q={{ item.id }}&drill_down_label={{ item.label|urlencode }}&category={{ selected_cat.code }}{% for sid in selected_industry_ids %}&industry_ids={{ sid }}{% endfor %}&start_date={{ start_date }}&end_date={{ end_date }}"
+                                    hx-target="#drilldown-modal-content"
+                                    onclick="document.getElementById('drilldown-modal').classList.remove('hidden')">
+                                    {{ item.avg }}
+                                </button>
+                            </td>
+                            <td class="px-6 py-4 text-center text-gray-500 font-medium" style="white-space: nowrap;">
+                                {{ item.total_val }}
+                            </td>
+                            <td class="px-6 py-4 text-right text-gray-400 font-bold" style="white-space: nowrap;">
+                                {{ item.sample_size }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="py-16 text-center text-gray-400">
+                    <svg class="mx-auto h-10 w-10 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="font-semibold text-sm">No data found for this combination</p>
+                    <p class="text-xs mt-1">Try widening the date range or selecting "All Industries"</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+
+<!-- Drill-down Modal -->
+<div id="drilldown-modal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in duration-200">
+        <div id="drilldown-modal-content">
+            <div class="p-8 text-center text-gray-400 italic">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                Loading verification data...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        // --- Industry Checkbox Dropdown ---
+        function toggleIndDropdown() {
+            document.getElementById('ind-dropdown').classList.toggle('hidden');
+        }
+        window.toggleIndDropdown = toggleIndDropdown;
+
+        // Close when clicking outside
+        document.addEventListener('click', function (e) {
+            const container = document.getElementById('ind-dropdown-container');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('ind-dropdown').classList.add('hidden');
+            }
+        });
+
+        function updateDropdownLabel() {
+            const checked = document.querySelectorAll('input[name="industry_ids"]:checked');
+            const label = document.getElementById('ind-dropdown-label');
+            if (checked.length === 0) {
+                label.textContent = 'All Industries';
+            } else {
+                label.textContent = checked.length + ' selected';
+            }
+        }
+
+        function onIndustryChange() {
+            const checked = document.querySelectorAll('input[name="industry_ids"]:checked');
+            const allChk = document.getElementById('chk-all');
+            allChk.checked = (checked.length === 0);
+            updateDropdownLabel();
+            htmx.trigger('#filter-form', 'submit'); // Auto-filter on change
+        }
+        window.onIndustryChange = onIndustryChange;
+
+        function toggleAllIndustries(el) {
+            if (el.checked) {
+                document.querySelectorAll('input[name="industry_ids"]').forEach(c => c.checked = false);
+            }
+            updateDropdownLabel();
+            htmx.trigger('#filter-form', 'submit'); // Auto-filter on change
+        }
+        window.toggleAllIndustries = toggleAllIndustries;
+
+        // Initialise label on load
+        updateDropdownLabel();
+
+
+
+        // --- Modal ---
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') document.getElementById('drilldown-modal').classList.add('hidden');
+        });
+        const modal = document.getElementById('drilldown-modal');
+        if (modal) modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+    })();
+</script>
+</div>

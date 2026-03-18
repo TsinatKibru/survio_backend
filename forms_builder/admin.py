@@ -28,12 +28,14 @@ class FormAdmin(admin.ModelAdmin):
     list_filter = ('category', 'schedule_type', 'is_active')
     search_fields = ('title',)
     inlines = [SectionInline, ReportingPeriodInline]
+    list_per_page = 10
 
 @admin.register(ReportingPeriod, site=survio_admin_site)
 class ReportingPeriodAdmin(admin.ModelAdmin):
     list_display = ('label', 'form', 'period_start', 'period_end', 'due_date', 'close_date', 'computed_status')
     list_filter = ('form',)
     search_fields = ('label', 'form__title')
+    list_per_page = 10
 
     @admin.display(description='Status')
     def computed_status(self, obj):
@@ -44,6 +46,7 @@ class SectionAdmin(admin.ModelAdmin):
     list_display = ('title', 'form', 'order')
     list_filter = ('form',)
     inlines = [QuestionInline]
+    list_per_page = 10
 
 @admin.register(Question, site=survio_admin_site)
 class QuestionAdmin(admin.ModelAdmin):
@@ -51,8 +54,10 @@ class QuestionAdmin(admin.ModelAdmin):
     list_filter = ('question_type', 'section__form')
     search_fields = ('label',)
     inlines = [QuestionOptionInline]
+    list_per_page = 10
 
 @admin.register(FormAssignment, site=survio_admin_site)
 class FormAssignmentAdmin(admin.ModelAdmin):
     list_display = ('form', 'industry', 'user', 'is_active')
     list_filter = ('is_active', 'form')
+    list_per_page = 10

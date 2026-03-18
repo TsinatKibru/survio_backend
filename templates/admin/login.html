@@ -1,0 +1,302 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% trans "Sign In" %} — FBIRDC Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      background: #0d1b2a;
+      overflow: hidden;
+    }
+
+    /* ── Left panel — branding ──────────────────────────── */
+    .branding {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 48px;
+      background: linear-gradient(145deg, #0d1b2a 0%, #1a3a55 60%, #205067 100%);
+      overflow: hidden;
+    }
+
+    /* Subtle grid lines decoration */
+    .branding::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(121,174,200,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(121,174,200,0.07) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* Glow blob */
+    .branding::after {
+      content: '';
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(65,118,144,0.25) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .branding-inner {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .logo-wrap {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.95);
+      border: 3px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 32px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    .logo-wrap img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+    }
+
+    .branding h1 {
+      color: #fff;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.3px;
+      margin-bottom: 10px;
+    }
+
+    .branding p {
+      color: rgba(255,255,255,0.52);
+      font-size: 13px;
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 36px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(121,174,200,0.15);
+      color: #79aec8;
+      border: 1px solid rgba(121,174,200,0.25);
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Right panel — login form ───────────────────────── */
+    .form-panel {
+      width: 420px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 48px;
+      background: #fff;
+      position: relative;
+    }
+
+    .form-panel h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0d1b2a;
+      margin-bottom: 6px;
+    }
+
+    .form-panel .subtitle {
+      font-size: 13px;
+      color: #6b7a8d;
+      margin-bottom: 36px;
+    }
+
+    /* Error messages */
+    .errornote {
+      background: #fff1f0;
+      border: 1px solid #ffa39e;
+      border-radius: 8px;
+      color: #cf1322;
+      font-size: 13px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+    }
+
+    /* Form fields */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0d1b2a;
+      background: #f8fafc;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #417690;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(65,118,144,0.12);
+    }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: #417690;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: 0.2px;
+      transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
+      box-shadow: 0 4px 14px rgba(65,118,144,0.35);
+    }
+
+    .submit-btn:hover {
+      background: #205067;
+      box-shadow: 0 6px 20px rgba(65,118,144,0.45);
+    }
+
+    .submit-btn:active { transform: scale(0.98); }
+
+    .form-footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    /* ── Responsive: stack vertically on mobile ─────────── */
+    @media (max-width: 768px) {
+      body { flex-direction: column; overflow: auto; }
+      .branding {
+        padding: 40px 24px 32px;
+        min-height: 220px;
+      }
+      .branding h1 { font-size: 20px; }
+      .logo-wrap { width: 100px; height: 100px; margin-bottom: 20px; }
+      .logo-wrap img { width: 68px; height: 68px; }
+      .badge-row { display: none; }
+      .form-panel { width: 100%; padding: 40px 28px 48px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left branding panel -->
+  <div class="branding">
+    <div class="branding-inner">
+      <div class="logo-wrap">
+        <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="FBIRDC Logo">
+      </div>
+      <h1>Food and Beverage Industry R&amp;D Center</h1>
+      <p>Integrated compliance and reporting platform for fortified food industries in Ethiopia.</p>
+      <div class="badge-row">
+        <span class="badge">📊 Analytics</span>
+        <span class="badge">✅ Compliance</span>
+        <span class="badge">🏭 Industries</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="form-panel">
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to the FBIRDC Admin Portal</p>
+
+    {% if form.errors %}
+    <div class="errornote">
+      {% trans "Please enter the correct username and password. Both fields are case-sensitive." %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ request.path }}">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="id_username">{% trans "Username" %}</label>
+        <input
+          type="text"
+          id="id_username"
+          name="username"
+          autocomplete="username"
+          autofocus
+          required
+          placeholder="Enter your username"
+          value="{{ form.username.value|default:'' }}"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="id_password">{% trans "Password" %}</label>
+        <input
+          type="password"
+          id="id_password"
+          name="password"
+          autocomplete="current-password"
+          required
+          placeholder="••••••••"
+        >
+      </div>
+
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="submit-btn">{% trans "Sign In" %}</button>
+    </form>
+
+    <p class="form-footer">FBIRDC &copy; {% now "Y" %} &nbsp;·&nbsp; FF-IMS Platform</p>
+  </div>
+
+</body>
+</html>

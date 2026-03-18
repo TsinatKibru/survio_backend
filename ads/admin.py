@@ -7,3 +7,4 @@ class AdAdmin(admin.ModelAdmin):
     list_display = ('title', 'is_active', 'start_date', 'end_date', 'order')
     list_filter = ('is_active',)
     search_fields = ('title', 'description')
+    list_per_page = 10

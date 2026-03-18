@@ -10,12 +10,69 @@ from django.utils import timezone
 from datetime import timedelta, date
 from calendar import month_abbr
 
+def get_edible_oil_correlation():
+    """Returns data comparing Vitamin A/D utilized vs Fortified Oil produced."""
+    oil_submissions = Submission.objects.filter(
+        form__category__code='edible_oil',
+        status='submitted'
+    ).select_related('organization')
+    
+    scatter_data = []
+    for sub in oil_submissions:
+        answers = sub.answers.all()
+        # Corrected labels from database
+        vit_utilized = next((a.value for a in answers if 'Vitamin A and D utilized (kg/month)' in a.question.label), None)
+        oil_produced = next((a.value for a in answers if 'fortified edible oil (ton/month)' in a.question.label), None)
+        
+        if vit_utilized and oil_produced:
+            try:
+                scatter_data.append({
+                    'x': float(vit_utilized.replace(',', '')),
+                    'y': float(oil_produced.replace(',', '')),
+                    'factory': sub.organization.name if sub.organization else 'Unknown'
+                })
+            except (ValueError, AttributeError):
+                pass
+                
+    return scatter_data
+
+def get_supply_chain_vulnerability():
+    """Returns data comparing stock available vs planned production."""
+    submissions = Submission.objects.filter(status='submitted').select_related('organization')
+    
+    vulnerability_data = []
+    for sub in submissions:
+        answers = sub.answers.all()
+        # Corrected labels from database
+        stock = next((a.value for a in answers if 'Vitamin A and D available in stock (kg)' in a.question.label), None)
+        plan = next((a.value for a in answers if 'Plan to produce fortified edible oil' in a.question.label), None)
+        
+        if stock and plan:
+            try:
+                stock_val = float(stock.replace(',', ''))
+                plan_val = float(plan.replace(',', ''))
+                if plan_val > 0:
+                    is_at_risk = stock_val < (plan_val * 0.1) # Risk if stock is < 10% of monthly plan
+                    vulnerability_data.append({
+                        'factory': sub.organization.name if sub.organization else 'Unknown',
+                        'stock': stock_val,
+                        'plan': plan_val,
+                        'is_risk': is_at_risk
+                    })
+            except (ValueError, AttributeError):
+                pass
+                
+    vulnerability_data.sort(key=lambda x: (x['stock'] / (x['plan'] or 1)))
+    return vulnerability_data[:10]
+
 
 class SurvioAdminSite(admin.AdminSite):
     site_header = "Food and Beverage Industry R&D Center"
-    site_title = "FBRDC Admin"
+    site_title = "FF-IMS Admin"
     index_title = "Management Dashboard"
     index_template = "admin/index.html"
+    login_template = "admin/login.html"
+    site_url = None  # Removes the "View site" link from the header
 
     def get_urls(self):
         urls = super().get_urls()
@@ -25,11 +82,18 @@ class SurvioAdminSite(admin.AdminSite):
                 self.admin_view(self.industry_performance_view),
                 name='industry-performance',
             ),
+            path(
+                'question-analytics/',
+                self.admin_view(self.question_analytics_view),
+                name='question-analytics',
+            ),
         ]
         return custom_urls + urls
 
     def industry_performance_view(self, request):
         """Dedicated full industry performance page."""
+        from django.core.paginator import Paginator
+
         user = request.user
         submissions_qs = Submission.objects.all()
 
@@ -60,16 +124,375 @@ class SurvioAdminSite(admin.AdminSite):
         # Sort by category then rate desc
         industry_perf.sort(key=lambda x: (x['category'], -x['rate']))
 
+        # All categories from full list (for filter chips)
         categories = sorted(set(i['category'] for i in industry_perf))
+
+        # Filter by search and category
+        search_query = request.GET.get('q', '').strip().lower()
+        cat_filter = request.GET.get('cat', 'all')
+        
+        filtered_perf = []
+        for item in industry_perf:
+            if search_query and search_query not in item['name'].lower():
+                continue
+            if cat_filter != 'all' and item['category'] != cat_filter:
+                continue
+            filtered_perf.append(item)
+
+        # Check if this is a full print request
+        is_print = request.GET.get('print') == '1'
+
+        if is_print:
+            # Bypass pagination for print mode
+            page_obj = None
+            paginator = None
+            industries_to_render = filtered_perf
+        else:
+            # Paginate — 10 per page
+            from django.core.paginator import Paginator
+            paginator = Paginator(filtered_perf, 10)
+            page_number = request.GET.get('page', 1)
+            page_obj = paginator.get_page(page_number)
+            industries_to_render = page_obj
 
         context = {
             **self.each_context(request),
             'title': 'All Industry Performance',
-            'industries': industry_perf,
+            'industries': industries_to_render,
+            'page_obj': page_obj,
+            'paginator': paginator,
             'categories': categories,
-            'total': len(industry_perf),
+            'total': len(filtered_perf),
+            'search_query': request.GET.get('q', '').strip(),
+            'active_cat': cat_filter,
+            'is_print': is_print,
         }
         return render(request, 'admin/industry_performance.html', context)
+
+    def question_analytics_view(self, request):
+        """View for advanced analytics with real-time aggregation & drill-down."""
+        from forms_builder.models import Question
+        from accounts.models import Industry
+        from submissions.models import Answer
+        from django.db.models import Avg, Sum, Count
+        
+        # 1. Filters & Normalization
+        cat_param = request.GET.get('category', 'edible_oil')
+        cat_code = cat_param.lower().replace(' ', '_')
+
+        # Get available categories for this user
+        available_cats = Category.objects.filter(is_active=True)
+        user = request.user
+        if user.role == User.ROLE_ADMIN and user.category:
+            available_cats = available_cats.filter(code=user.category.code)
+            # Override cat_code if restricted
+            cat_code = user.category.code
+
+        selected_cat = available_cats.filter(code=cat_code).first()
+        if not selected_cat and available_cats.exists():
+            selected_cat = available_cats.first()
+            cat_code = selected_cat.code
+
+        # Safely convert to integers, ignoring non-numeric strings
+        industry_ids = []
+        for i in request.GET.getlist('industry_ids'):
+            if i:
+                try: industry_ids.append(int(i))
+                except ValueError: pass
+
+        drill_down_q = request.GET.get('drill_down_q')
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        
+        today = timezone.now().date()
+        def safe_date(date_str, default):
+            if not date_str: return default
+            try: return date.fromisoformat(date_str)
+            except (ValueError, TypeError): return default
+
+        start_date = safe_date(start_date_str, today - timedelta(days=90))
+        end_date = safe_date(end_date_str, today)
+        
+        # 2. Main Querysets
+        submissions = Submission.objects.filter(status='submitted').select_related('organization')
+        if selected_cat:
+            submissions = submissions.filter(form__category=selected_cat)
+        if industry_ids:
+            submissions = submissions.filter(organization_id__in=industry_ids)
+        
+        submissions = submissions.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
+
+        # 2.5 Drill Down logic
+        if drill_down_q:
+            drill_label = request.GET.get('drill_down_label', '')
+            drill_data = []
+            final_label = drill_label
+
+            if drill_down_q == '0' and drill_label:
+                # Special Case: Drill down into pivoted Salt data
+                # Prefetch answers to avoid N+1 inside the loop
+                submissions = submissions.prefetch_related('answers')
+                
+                for sub in submissions:
+                    ans_map = {a.question_id: a.value for a in sub.answers.all()}
+                    
+                    # Search capacity slots
+                    metric_groups = [(370, [371, 372, 373]), (374, [375, 376, 377]), (378, [379, 380, 381]), (382, [383, 384, 385])]
+                    metric_labels = ["Installed Capacity", "Max. Attained Capacity", "Actual Production"]
+                    
+                    for type_id, m_ids in metric_groups:
+                        p_type = ans_map.get(type_id)
+                        if not p_type: continue
+                        clean_type = p_type.replace('_', ' ').replace('-', ' ').title()
+                        for idx, m_id in enumerate(m_ids):
+                            full_l = f"{clean_type} ({metric_labels[idx]})"
+                            if full_l == drill_label:
+                                val_str = ans_map.get(m_id)
+                                if val_str:
+                                    try:
+                                        drill_data.append({
+                                            'submission': sub, 
+                                            'value': val_str
+                                        })
+                                    except: pass
+                    
+                    # Search packaging slots
+                    pkg_groups = [(386, 387, 388), (389, 390, 391), (392, 393, 394), (405, 406, 407)]
+                    for t_id, a_id, u_id in pkg_groups:
+                        p_type = ans_map.get(t_id)
+                        if not p_type: continue
+                        clean_p = p_type.replace('_', ' ').replace('-', ' ').title()
+                        full_l = f"{clean_p} (Required Amount)"
+                        if full_l == drill_label:
+                            val_str = ans_map.get(a_id)
+                            if val_str:
+                                drill_data.append({
+                                    'submission': sub,
+                                    'value': val_str
+                                })
+            else:
+                # Standard Case: Drill down into specific Question ID
+                try:
+                    q = Question.objects.get(id=drill_down_q)
+                    final_label = q.label
+                    drill_data = Answer.objects.filter(
+                        question=q, 
+                        submission__in=submissions
+                    ).select_related('submission__organization')
+                except Question.DoesNotExist:
+                    pass
+                
+            return render(request, 'admin/analytics_drilldown_partial.html', {
+                'question': {'label': final_label},
+                'answers': drill_data
+            })
+
+        # 3. Master Aggregation Table
+        explorer_qs = Question.objects.filter(
+            section__form__category=selected_cat,
+            question_type__in=['number', 'decimal', 'yes_no']
+        ).order_by('section__order', 'order') if selected_cat else Question.objects.none()
+
+        explorer_data = []
+        
+        # --- SPECIAL SALT PIVOT LOGIC ---
+        if selected_cat and selected_cat.code == 'salt':
+            # 1. Capacity Blocks: (type_id, [metric_ids])
+            metric_groups = [
+                (370, [371, 372, 373]), (374, [375, 376, 377]),
+                (378, [379, 380, 381]), (382, [383, 384, 385]),
+            ]
+            # 2. Packaging Blocks: (type_id, amount_id, unit_id)
+            pkg_groups = [
+                (386, 387, 388), (389, 390, 391),
+                (392, 393, 394), (405, 406, 407),
+            ]
+            
+            salt_pivot = {}
+
+            # Get all relevant answers in one query
+            all_q_ids = [370, 374, 378, 382, 371, 372, 373, 375, 376, 377, 379, 380, 381, 383, 384, 385,
+                        386, 387, 388, 389, 390, 391, 392, 393, 394, 405, 406, 407]
+            answers_qs = Answer.objects.filter(
+                submission__in=submissions,
+                question_id__in=all_q_ids
+            ).values('submission_id', 'question_id', 'value')
+
+            sub_map = {}
+            for a in answers_qs:
+                if a['submission_id'] not in sub_map: sub_map[a['submission_id']] = {}
+                sub_map[a['submission_id']][a['question_id']] = a['value']
+
+            for sub_id, ans_map in sub_map.items():
+                # A. Capacity Pivot
+                for type_id, metric_ids in metric_groups:
+                    prod_type = ans_map.get(type_id)
+                    if not prod_type: continue
+                    # Clean label
+                    clean_type = prod_type.replace('_', ' ').replace('-', ' ').title()
+                    
+                    metric_labels = ["Installed Capacity", "Max. Attained Capacity", "Actual Production"]
+                    for idx, m_id in enumerate(metric_ids):
+                        val_str = ans_map.get(m_id)
+                        if not val_str: continue
+                        try:
+                            val = float(val_str.replace(',', '').split()[0])
+                            key = (f"{clean_type} ({metric_labels[idx]})", "ton/day")
+                            if key not in salt_pivot: salt_pivot[key] = []
+                            salt_pivot[key].append(val)
+                        except: pass
+                
+                # B. Packaging Pivot
+                for t_id, a_id, u_id in pkg_groups:
+                    p_type = ans_map.get(t_id)
+                    amount_str = ans_map.get(a_id)
+                    unit_str = ans_map.get(u_id) or "Qty"
+                    if not p_type or not amount_str: continue
+                    
+                    clean_p = p_type.replace('_', ' ').replace('-', ' ').title()
+                    try:
+                        val = float(amount_str.replace(',', '').split()[0])
+                        key = (f"{clean_p} (Required Amount)", unit_str)
+                        if key not in salt_pivot: salt_pivot[key] = []
+                        salt_pivot[key].append(val)
+                    except: pass
+
+            # Convert pivot to explorer_data items
+            for (label, unit), vals in salt_pivot.items():
+                if not vals: continue
+                v_sum = round(sum(vals), 1)
+                explorer_data.append({
+                    'id': 0, 'label': label,
+                    'avg': round(v_sum / len(vals), 1),
+                    'total_val': v_sum,
+                    'sample_size': len(vals),
+                    'unit': unit,
+                    'type': 'decimal'
+                })
+            
+            # Exclude IDs from standard loop
+            explorer_qs = explorer_qs.exclude(id__in=all_q_ids)
+
+        for q in explorer_qs:
+            ans_qs = Answer.objects.filter(question=q, submission__in=submissions)
+            count = ans_qs.count()
+            if count == 0: continue
+
+            if q.question_type == 'yes_no':
+                yes_count = ans_qs.filter(value__iexact='yes').count()
+                avg = round((yes_count / count) * 100, 1)
+                total_sum = yes_count
+                unit = "% Yes"
+            else:
+                vals = []
+                for a in ans_qs:
+                    try: vals.append(float(a.value.replace(',', '').split()[0]))
+                    except (ValueError, AttributeError, IndexError): pass
+                
+                if vals:
+                    avg = round(sum(vals)/len(vals), 1)
+                    total_sum = round(sum(vals), 1)
+                    unit = q.label.split('(')[-1].split(')')[0] if '(' in q.label else ""
+                else:
+                    avg = 0
+                    total_sum = 0
+                    unit = ""
+
+            explorer_data.append({
+                'id': q.id,
+                'label': q.label,
+                'avg': avg,
+                'total_val': total_sum,
+                'sample_size': count,
+                'unit': unit,
+                'type': q.question_type
+            })
+            
+        # 4. Standard Metrics Cards (Quick Calcs)
+        responses_count = submissions.count()
+        factories_qs = Industry.objects.filter(category=selected_cat) if selected_cat else Industry.objects.all()
+        factories_count = factories_qs.count()
+        
+        # Efficiency calculation
+        total_eff = 0
+        eff_count = 0
+        risk_count = 0
+        
+        # Pre-calculate labels for stock calculation based on category
+        stock_label = 'stock'
+        if selected_cat and selected_cat.code == 'salt': stock_label = 'Potassium iodate'
+        elif selected_cat and selected_cat.code == 'edible_oil': stock_label = 'Vitamin'
+
+        for fact in factories_qs:
+            f_subs = submissions.filter(organization=fact)
+            if not f_subs.exists(): continue
+            
+            latest_sub = f_subs.order_by('-created_at').first()
+            ans = latest_sub.answers.all()
+            
+            # Efficiency
+            actual = next((a.value for a in ans if 'Actual' in a.question.label), "0")
+            inst = next((a.value for a in ans if 'Installed' in a.question.label), "1")
+            try:
+                act_v = float(actual.replace(',', '').split()[0])
+                inst_v = float(inst.replace(',', '').split()[0])
+                eff = min(100, (act_v / inst_v) * 100) if inst_v > 0 else 0
+                total_eff += eff
+                eff_count += 1
+            except: pass
+
+            # Stock Days
+            stock_ans = next((a.value for a in ans if stock_label in a.question.label), "0")
+            try:
+                s_val = float(stock_ans.replace(',', '').split()[0])
+                stock_days = round(s_val * 1.5)
+                if stock_days < 15: risk_count += 1
+            except: pass
+
+        # 5. Yes/No Summary
+        yesno_summary = []
+        yesno_qs = Question.objects.filter(section__form__category=selected_cat, question_type='yes_no')[:5] if selected_cat else Question.objects.none()
+        for q in yesno_qs:
+            y_ans = Answer.objects.filter(question=q, submission__in=submissions)
+            y_count = y_ans.count()
+            if y_count > 0:
+                yes_p = round((y_ans.filter(value__iexact='yes').count() / y_count) * 100)
+                yesno_summary.append({'label': q.hint or q.label, 'p': yes_p})
+
+        # Industry metadata for filtering
+        industries_metadata = []
+        ind_qs = Industry.objects.all().select_related('category')
+        if selected_cat:
+            ind_qs = ind_qs.filter(category=selected_cat)
+        
+        for i in ind_qs:
+            industries_metadata.append({
+                'id': i.id,
+                'name': i.name,
+                'selected': i.id in industry_ids
+            })
+
+        context = {
+            **self.each_context(request),
+            'title': 'Strategic Data Explorer',
+            'explorer_data': explorer_data,
+            'selected_cat': selected_cat,
+            'responses_count': responses_count,
+            'factories_count': factories_count,
+            'drill_down_q': drill_down_q,
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'category_choices': [(c.code, c.name) for c in available_cats],
+            'industries': industries_metadata,
+            'selected_industry_ids': industry_ids,
+            'avg_efficiency': round(total_eff / eff_count) if eff_count > 0 else 0,
+            'factories_at_risk': risk_count,
+            'yesno_summary': yesno_summary,
+        }
+
+        if request.headers.get('HX-Request') or request.GET.get('partial'):
+            return render(request, 'admin/question_analytics_partial.html', context)
+        return render(request, 'admin/question_analytics.html', context)
 
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}

@@ -15,6 +15,7 @@ class SubmissionAdmin(ExportMixin, admin.ModelAdmin):
     search_fields = ('organization__name', 'submitted_by__username', 'industry_name')
     readonly_fields = ('form', 'period', 'organization', 'submitted_by', 'submitted_at', 'form_version')
     inlines = [AnswerInline]
+    list_per_page = 10
 
     def has_add_permission(self, request):
         return False  # Submissions come from mobile

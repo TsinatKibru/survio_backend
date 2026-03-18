@@ -131,8 +131,8 @@
                     <thead class="bg-gray-50 text-[10px] text-gray-500 uppercase tracking-wider">
                         <tr>
                             <th class="px-6 py-3 font-bold" style="width: 100%;">Question / Indicator</th>
-                            <th class="px-6 py-3 font-bold text-center" style="white-space: nowrap;">Avg (Verify)</th>
-                            <th class="px-6 py-3 font-bold text-center" style="white-space: nowrap;">Sum</th>
+                            <th class="px-6 py-3 font-bold text-center" style="white-space: nowrap;" title="For Yes/No questions, this is the percentage of 'Yes' responses.">Avg (Verify)</th>
+                            <th class="px-6 py-3 font-bold text-center" style="white-space: nowrap;" title="For Yes/No questions, this is the total count of 'Yes' responses.">Sum</th>
                             <th class="px-6 py-3 font-bold text-right" style="white-space: nowrap;">Sample (N)</th>
                         </tr>
                     </thead>
@@ -151,11 +151,11 @@
                                     hx-get="?drill_down_q={{ item.id }}&drill_down_label={{ item.label|urlencode }}&category={{ selected_cat.code }}{% for sid in selected_industry_ids %}&industry_ids={{ sid }}{% endfor %}&start_date={{ start_date }}&end_date={{ end_date }}"
                                     hx-target="#drilldown-modal-content"
                                     onclick="document.getElementById('drilldown-modal').classList.remove('hidden')">
-                                    {{ item.avg }}
+                                    {{ item.avg }}{% if item.type == 'yes_no' %}%Y{% endif %}
                                 </button>
                             </td>
                             <td class="px-6 py-4 text-center text-gray-500 font-medium" style="white-space: nowrap;">
-                                {{ item.total_val }}
+                                {{ item.total_val }}{% if item.type == 'yes_no' %} Yes{% endif %}
                             </td>
                             <td class="px-6 py-4 text-right text-gray-400 font-bold" style="white-space: nowrap;">
                                 {{ item.sample_size }}

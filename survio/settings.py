@@ -139,3 +139,14 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Survio <noreply@survio.com>')
+
+# --- Authentication & Session Limits ---
+# Bypass the "Logged out" confirmation screen and redirect straight to login
+LOGOUT_REDIRECT_URL = '/admin/login/'
+
+# Enforce a 30-minute inactivity timeout (1800 seconds)
+SESSION_COOKIE_AGE = 1800
+# Log out automatically if the user explicitly closes their browser window
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Reset the 30-minute timer on every click/action
+SESSION_SAVE_EVERY_REQUEST = True

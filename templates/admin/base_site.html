@@ -5,6 +5,7 @@
 <h1 id="site-name"><a href="{% url 'survio_admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
 {% endblock %}
 
+
 {% block extrastyle %}
 {{ block.super }}
 <script>
@@ -12,6 +13,64 @@
   if (!localStorage.getItem('django.admin.navSidebarIsOpen')) {
       localStorage.setItem('django.admin.navSidebarIsOpen', 'false');
   }
+</script>
+<style>
+  /* Base cleanup for older Django versions */
+  .readonly-password-hash-summary,
+  .field-password ul {
+    display: none !important;
+  }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Hide the Django 5.x password hash paragraph robustly
+  var pwField = document.querySelector('.field-password');
+  if (pwField) {
+    var bTags = pwField.querySelectorAll('strong, b');
+    for (var i = 0; i < bTags.length; i++) {
+        if (bTags[i].textContent.toLowerCase().includes('algorithm')) {
+            var container = bTags[i].closest('p') || bTags[i].parentElement;
+            if (container) container.style.display = 'none';
+            break;
+        }
+    }
+  }
+
+  var analyticsHTML =
+    '<div class="app-analytics module">' +
+      '<table>' +
+        '<caption>' +
+          '<a href="#" class="section" style="cursor:default;pointer-events:none;color:inherit;">Analytics</a>' +
+        '</caption>' +
+        '<tr>' +
+          '<th scope="row">' +
+            '<a href="/admin/industry-performance/" style="display:flex;align-items:center;">' +
+              '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:8px;opacity:.7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>' +
+              'Industry Performance' +
+            '</a>' +
+          '</th>' +
+        '</tr>' +
+        '<tr>' +
+          '<th scope="row">' +
+            '<a href="/admin/question-analytics/" style="display:flex;align-items:center;">' +
+              '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:8px;opacity:.7;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>' +
+              'Strategic Data Explorer' +
+            '</a>' +
+          '</th>' +
+        '</tr>' +
+      '</table>' +
+    '</div>';
+
+  // Inject into Django's desktop sidebar
+  var sidebar = document.querySelector('#nav-sidebar .module');
+  if (sidebar) {
+    sidebar.insertAdjacentHTML('beforebegin', analyticsHTML);
+  } else {
+    // Fallback: prepend to the sidebar container itself
+    var sidebarContainer = document.getElementById('nav-sidebar');
+    if (sidebarContainer) sidebarContainer.insertAdjacentHTML('afterbegin', analyticsHTML);
+  }
+});
 </script>
 <style>
 /* ── Mobile Slide-in Drawer ─────────────────────────────── */

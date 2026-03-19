@@ -55,13 +55,13 @@
     overflow: hidden;
   }
 
-  /* HTMX swap target must also be flex-column so children can scroll */
+  /* HTMX swap target must scroll when content is too tall */
   #drilldown-modal-content {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
   }
 </style>
 {% endblock %} {% block content %}

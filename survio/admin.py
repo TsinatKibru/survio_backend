@@ -295,67 +295,114 @@ class SurvioAdminSite(admin.AdminSite):
 
         explorer_data = []
         
-        # --- SPECIAL SALT PIVOT LOGIC ---
+        # --- SPECIAL SALT PIVOT LOGIC (label-based, ID-independent) ---
         if selected_cat and selected_cat.code == 'salt':
-            # 1. Capacity Blocks: (type_id, [metric_ids])
-            metric_groups = [
-                (370, [371, 372, 373]), (374, [375, 376, 377]),
-                (378, [379, 380, 381]), (382, [383, 384, 385]),
-            ]
-            # 2. Packaging Blocks: (type_id, amount_id, unit_id)
-            pkg_groups = [
-                (386, 387, 388), (389, 390, 391),
-                (392, 393, 394), (405, 406, 407),
-            ]
-            
+            import re
+            # Fetch all salt questions with their labels
+            salt_questions = {
+                q.id: q.label
+                for q in Question.objects.filter(section__form__category=selected_cat)
+            }
+
+            # Build lookup maps by matching label patterns
+            # Capacity: "Product Type N" → type, "Installed Capacity N" / "Max. Attained Capacity N" / "Actual Production N"
+            # Packaging: "Packaging Material Type N" → type, "Required Amount N" → amount
+            type_qs = {}       # slot_key → question_id  e.g. "cap_1" -> id
+            cap_metric_qs = {} # (slot_key, metric_name) -> question_id
+            pkg_type_qs = {}   # slot_key -> question_id
+            pkg_amount_qs = {} # slot_key -> question_id
+
+            for qid, label in salt_questions.items():
+                stripped = label.strip()
+                # Product type (capacity section): "Product Type 1"
+                m = re.match(r'Product Type\s+(\d+)\s*$', stripped, re.IGNORECASE)
+                if m:
+                    type_qs[m.group(1)] = qid
+                    continue
+                # Capacity metrics: "Installed Capacity 1 (ton/day)", etc.
+                METRIC_PATTERNS = {
+                    r'Installed Capacity': 'Installed Capacity',
+                    r'Max\.? Attained Capacity': 'Max. Attained Capacity',
+                    r'Actual Production': 'Actual Production',
+                }
+                matched_metric = False
+                for pattern, metric_key in METRIC_PATTERNS.items():
+                    m = re.match(rf'{pattern}\s+(\d+)\b', stripped, re.IGNORECASE)
+                    if m:
+                        cap_metric_qs[(m.group(1), metric_key)] = qid
+                        matched_metric = True
+                        break
+                if matched_metric:
+                    continue
+                # Packaging material type: "Packaging Material Type N"
+                m = re.match(r'Packaging Material(?:\s+Type)?\s+(\d+)\s*$', stripped, re.IGNORECASE)
+                if m:
+                    pkg_type_qs[m.group(1)] = qid
+                    continue
+                # Packaging amounts: "Amount N"  (just Amount N, not Required Amount)
+                m = re.match(r'Amount\s+(\d+)\s*$', stripped, re.IGNORECASE)
+                if m:
+                    pkg_amount_qs[m.group(1)] = qid
+                    continue
+                # Also exclude Unit N questions from standard loop
+                m = re.match(r'Unit\s+(\d+)\s*$', stripped, re.IGNORECASE)
+                if m:
+                    # Add to all_q_ids exclusion list only (no pivot use)
+                    pkg_amount_qs[f'unit_{m.group(1)}'] = qid
+
+            all_q_ids = list(set(
+                list(type_qs.values()) + list(cap_metric_qs.values()) +
+                list(pkg_type_qs.values()) + list(pkg_amount_qs.values())
+            ))
+
             salt_pivot = {}
 
-            # Get all relevant answers in one query
-            all_q_ids = [370, 374, 378, 382, 371, 372, 373, 375, 376, 377, 379, 380, 381, 383, 384, 385,
-                        386, 387, 388, 389, 390, 391, 392, 393, 394, 405, 406, 407]
-            answers_qs = Answer.objects.filter(
-                submission__in=submissions,
-                question_id__in=all_q_ids
-            ).values('submission_id', 'question_id', 'value')
+            if all_q_ids:
+                answers_qs = Answer.objects.filter(
+                    submission__in=submissions,
+                    question_id__in=all_q_ids
+                ).values('submission_id', 'question_id', 'value')
 
-            sub_map = {}
-            for a in answers_qs:
-                if a['submission_id'] not in sub_map: sub_map[a['submission_id']] = {}
-                sub_map[a['submission_id']][a['question_id']] = a['value']
+                sub_map = {}
+                for a in answers_qs:
+                    sub_map.setdefault(a['submission_id'], {})[a['question_id']] = a['value']
 
-            for sub_id, ans_map in sub_map.items():
-                # A. Capacity Pivot
-                for type_id, metric_ids in metric_groups:
-                    prod_type = ans_map.get(type_id)
-                    if not prod_type: continue
-                    # Clean label
-                    clean_type = prod_type.replace('_', ' ').replace('-', ' ').title()
-                    
-                    metric_labels = ["Installed Capacity", "Max. Attained Capacity", "Actual Production"]
-                    for idx, m_id in enumerate(metric_ids):
-                        val_str = ans_map.get(m_id)
-                        if not val_str: continue
+                for sub_id, ans_map in sub_map.items():
+                    # A. Capacity Pivot
+                    for slot, type_qid in type_qs.items():
+                        prod_type = ans_map.get(type_qid)
+                        if not prod_type: continue
+                        clean_type = prod_type.replace('_', ' ').replace('-', ' ').title()
+                        # Skip generic placeholder option names like "Option A", "Option B" etc.
+                        if re.match(r'^Option\s+[A-Z]$', clean_type, re.IGNORECASE):
+                            continue
+                        for metric_key in ['Installed Capacity', 'Max. Attained Capacity', 'Actual Production']:
+                            m_qid = cap_metric_qs.get((slot, metric_key))
+                            if not m_qid: continue
+                            val_str = ans_map.get(m_qid)
+                            if not val_str: continue
+                            try:
+                                val = float(val_str.replace(',', '').split()[0])
+                                key = (f"{clean_type} ({metric_key})", "ton/day")
+                                salt_pivot.setdefault(key, []).append(val)
+                            except: pass
+
+                    # B. Packaging Pivot
+                    for slot, type_qid in pkg_type_qs.items():
+                        p_type = ans_map.get(type_qid)
+                        amount_qid = pkg_amount_qs.get(slot)
+                        if not p_type or not amount_qid: continue
+                        amount_str = ans_map.get(amount_qid)
+                        if not amount_str: continue
+                        clean_p = p_type.replace('_', ' ').replace('-', ' ').title()
+                        # Skip generic placeholder names like "Option A", "Option B" etc.
+                        if re.match(r'^Option\s+[A-Z]$', clean_p, re.IGNORECASE):
+                            continue
                         try:
-                            val = float(val_str.replace(',', '').split()[0])
-                            key = (f"{clean_type} ({metric_labels[idx]})", "ton/day")
-                            if key not in salt_pivot: salt_pivot[key] = []
-                            salt_pivot[key].append(val)
+                            val = float(amount_str.replace(',', '').split()[0])
+                            key = (f"{clean_p} (Required Amount)", "Qty")
+                            salt_pivot.setdefault(key, []).append(val)
                         except: pass
-                
-                # B. Packaging Pivot
-                for t_id, a_id, u_id in pkg_groups:
-                    p_type = ans_map.get(t_id)
-                    amount_str = ans_map.get(a_id)
-                    unit_str = ans_map.get(u_id) or "Qty"
-                    if not p_type or not amount_str: continue
-                    
-                    clean_p = p_type.replace('_', ' ').replace('-', ' ').title()
-                    try:
-                        val = float(amount_str.replace(',', '').split()[0])
-                        key = (f"{clean_p} (Required Amount)", unit_str)
-                        if key not in salt_pivot: salt_pivot[key] = []
-                        salt_pivot[key].append(val)
-                    except: pass
 
             # Convert pivot to explorer_data items
             for (label, unit), vals in salt_pivot.items():
@@ -369,9 +416,10 @@ class SurvioAdminSite(admin.AdminSite):
                     'unit': unit,
                     'type': 'decimal'
                 })
-            
-            # Exclude IDs from standard loop
-            explorer_qs = explorer_qs.exclude(id__in=all_q_ids)
+
+            # Exclude handled IDs from standard loop
+            if all_q_ids:
+                explorer_qs = explorer_qs.exclude(id__in=all_q_ids)
 
         for q in explorer_qs:
             ans_qs = Answer.objects.filter(question=q, submission__in=submissions)

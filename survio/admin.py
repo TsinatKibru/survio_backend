@@ -111,7 +111,9 @@ class SurvioAdminSite(admin.AdminSite):
         return qs
 
     def _aggregate_by_period(self, category_code, period_id, industry_id=None):
-        """Return {question_id: (label, avg_val, sum_val, count)} for one period."""
+        """Return {norm_label: (label, avg_val, sum_val, count)} for one period.
+        Numbered variants (e.g. 'Installed Capacity 1 (ton/day)') are merged."""
+        import re as _re
         from submissions.models import Answer
         from django.db.models import Avg, Sum, Count
         filters = dict(
@@ -128,17 +130,34 @@ class SurvioAdminSite(admin.AdminSite):
             .values('question_id', 'question__label')
             .annotate(count=Count('id'), avg=Avg('value'), total=Sum('value'))
         )
-        result = {}
+
+        def _normalize(label):
+            """Strip trailing ' N' or ' N (unit)' numbering from label."""
+            # e.g. 'Installed Capacity 2 (ton/day)' -> 'Installed Capacity (ton/day)'
+            label = _re.sub(r'\s+\d+\s*(\([^)]+\))', r' \1', label)
+            # e.g. 'Amount 2' -> 'Amount'
+            label = _re.sub(r'\s+\d+$', '', label)
+            return label.strip()
+
+        # Merge rows with the same normalized label
+        merged = {}  # norm_label -> [total_sum, total_count]
         for row in raw:
             try:
-                result[row['question_id']] = (
-                    row['question__label'],
-                    round(float(row['avg'] or 0), 2),
-                    round(float(row['total'] or 0), 2),
-                    row['count'],
-                )
+                norm = _normalize(row['question__label'])
+                val = float(row['total'] or 0)
+                cnt = int(row['count'] or 0)
+                if norm in merged:
+                    merged[norm][0] += val
+                    merged[norm][1] += cnt
+                else:
+                    merged[norm] = [val, cnt]
             except (TypeError, ValueError):
                 pass
+
+        result = {}
+        for norm, (total, cnt) in merged.items():
+            avg = round(total / cnt, 2) if cnt else 0
+            result[norm] = (norm, avg, round(total, 2), cnt)
         return result
 
     def _aggregate_by_industry(self, category_code, period_id, question_id):

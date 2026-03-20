@@ -87,8 +87,218 @@ class SurvioAdminSite(admin.AdminSite):
                 self.admin_view(self.question_analytics_view),
                 name='question-analytics',
             ),
+            path(
+                'data-comparison/',
+                self.admin_view(self.data_comparison_view),
+                name='data-comparison',
+            ),
+            path(
+                'data-comparison/chart/',
+                self.admin_view(self.data_comparison_chart_view),
+                name='data-comparison-chart',
+            ),
         ]
         return custom_urls + urls
+
+    # ── Comparison helpers ─────────────────────────────────────────────────
+    def _get_numeric_questions(self, category_code):
+        """All number/decimal questions for a given category's forms."""
+        from forms_builder.models import Question
+        qs = Question.objects.filter(
+            section__form__category__code=category_code,
+            question_type__in=['number', 'decimal'],
+        ).select_related('section__form').order_by('section__form__id', 'order')
+        return qs
+
+    def _aggregate_by_period(self, category_code, period_id, industry_id=None):
+        """Return {question_id: (label, avg_val, sum_val, count)} for one period."""
+        from submissions.models import Answer
+        from django.db.models import Avg, Sum, Count
+        filters = dict(
+            submission__period_id=period_id,
+            submission__status='submitted',
+            question__question_type__in=['number', 'decimal'],
+            question__section__form__category__code=category_code,
+        )
+        if industry_id:
+            filters['submission__organization_id'] = industry_id
+        raw = (
+            Answer.objects
+            .filter(**filters)
+            .values('question_id', 'question__label')
+            .annotate(count=Count('id'), avg=Avg('value'), total=Sum('value'))
+        )
+        result = {}
+        for row in raw:
+            try:
+                result[row['question_id']] = (
+                    row['question__label'],
+                    round(float(row['avg'] or 0), 2),
+                    round(float(row['total'] or 0), 2),
+                    row['count'],
+                )
+            except (TypeError, ValueError):
+                pass
+        return result
+
+    def _aggregate_by_industry(self, category_code, period_id, question_id):
+        """Return [(industry_name, avg_val)] sorted descending for one question+period."""
+        from submissions.models import Answer
+        from django.db.models import Avg
+        rows = (
+            Answer.objects
+            .filter(
+                submission__period_id=period_id,
+                submission__status='submitted',
+                question_id=question_id,
+                question__section__form__category__code=category_code,
+            )
+            .values('submission__organization__name')
+            .annotate(avg=Avg('value'))
+            .order_by('-avg')
+        )
+        result = []
+        for row in rows:
+            try:
+                result.append((
+                    row['submission__organization__name'] or 'Unknown',
+                    round(float(row['avg'] or 0), 2),
+                ))
+            except (TypeError, ValueError):
+                pass
+        return result
+
+    # ── Comparison views ───────────────────────────────────────────────────
+    def data_comparison_view(self, request):
+        """Main Data Comparison page — Period Comparison + Factory Benchmark tabs."""
+        from forms_builder.models import ReportingPeriod
+
+        categories = Category.objects.filter(forms__isnull=False).distinct().order_by('name')
+        cat_code = request.GET.get('category', '')
+        selected_cat = categories.filter(code=cat_code).first() if cat_code else None
+
+        # Get periods for this category
+        periods = []
+        questions = []
+        industries = []
+        if selected_cat:
+            period_form_ids = Form.objects.filter(
+                category=selected_cat, is_active=True
+            ).values_list('id', flat=True)
+            periods = (
+                ReportingPeriod.objects
+                .filter(form_id__in=period_form_ids)
+                .order_by('-period_start')
+            )
+            questions = self._get_numeric_questions(selected_cat.code)
+            industries = Industry.objects.filter(
+                category=selected_cat, is_active=True
+            ).order_by('name')
+
+        context = {
+            **self.each_context(request),
+            'title': 'Data Comparison',
+            'categories': categories,
+            'selected_cat': selected_cat,
+            'periods': periods,
+            'questions': questions,
+            'industries': industries,
+            'mode': request.GET.get('mode', 'period'),
+            'period_a_id': request.GET.get('period_a', ''),
+            'period_b_id': request.GET.get('period_b', ''),
+            'period_id': request.GET.get('period', ''),
+            'question_id': request.GET.get('question', ''),
+            'industry_id': request.GET.get('industry', ''),
+        }
+        return render(request, 'admin/data_comparison.html', context)
+
+    def data_comparison_chart_view(self, request):
+        """HTMX endpoint — returns chart data JSON + partial HTML."""
+        import json as _json
+        from forms_builder.models import ReportingPeriod
+
+        mode = request.GET.get('mode', 'period')
+        cat_code = request.GET.get('category', '')
+        chart_data = {}
+        delta_rows = []
+        benchmark_rows = []
+        error = None
+
+        try:
+            if mode == 'period':
+                period_a_id = request.GET.get('period_a', '')
+                period_b_id = request.GET.get('period_b', '')
+                industry_id = request.GET.get('industry', '') or None
+                if not (cat_code and period_a_id and period_b_id):
+                    error = 'Please select a category and two periods.'
+                else:
+                    pa = ReportingPeriod.objects.get(id=period_a_id)
+                    pb = ReportingPeriod.objects.get(id=period_b_id)
+                    data_a = self._aggregate_by_period(cat_code, period_a_id, industry_id)
+                    data_b = self._aggregate_by_period(cat_code, period_b_id, industry_id)
+                    # Build chart data on shared questions
+                    all_qids = sorted(set(data_a) | set(data_b))
+                    labels, vals_a, vals_b = [], [], []
+                    for qid in all_qids:
+                        label_a = data_a.get(qid, (None,))[0]
+                        label_b = data_b.get(qid, (None,))[0]
+                        label = label_a or label_b or f'Q{qid}'
+                        # Truncate long labels for chart
+                        short = label[:35] + '…' if len(label) > 35 else label
+                        a_avg = data_a.get(qid, (None, 0, 0, 0))[1]
+                        b_avg = data_b.get(qid, (None, 0, 0, 0))[1]
+                        labels.append(short)
+                        vals_a.append(a_avg)
+                        vals_b.append(b_avg)
+                        # Delta row
+                        if a_avg and b_avg:
+                            pct = round(((b_avg - a_avg) / a_avg) * 100, 1) if a_avg else 0
+                        else:
+                            pct = None
+                        delta_rows.append({'label': label, 'a': a_avg, 'b': b_avg, 'pct': pct})
+                    chart_data = {
+                        'type': 'bar',
+                        'labels': labels,
+                        'datasets': [
+                            {'label': pa.label, 'data': vals_a, 'backgroundColor': 'rgba(65,118,144,0.75)'},
+                            {'label': pb.label, 'data': vals_b, 'backgroundColor': 'rgba(28,200,138,0.75)'},
+                        ],
+                    }
+
+            elif mode == 'benchmark':
+                period_id = request.GET.get('period', '')
+                question_id = request.GET.get('question', '')
+                if not (cat_code and period_id and question_id):
+                    error = 'Please select a category, period, and metric.'
+                else:
+                    period = ReportingPeriod.objects.get(id=period_id)
+                    from forms_builder.models import Question
+                    q = Question.objects.get(id=question_id)
+                    rows = self._aggregate_by_industry(cat_code, period_id, question_id)
+                    benchmark_rows = rows
+                    chart_data = {
+                        'type': 'horizontalBar',
+                        'labels': [r[0] for r in rows],
+                        'datasets': [{
+                            'label': q.label,
+                            'data': [r[1] for r in rows],
+                            'backgroundColor': 'rgba(65,118,144,0.75)',
+                        }],
+                        'period_label': period.label,
+                        'question_label': q.label,
+                    }
+        except Exception as e:
+            error = str(e)
+
+        context = {
+            **self.each_context(request),
+            'mode': mode,
+            'chart_data_json': _json.dumps(chart_data),
+            'delta_rows': delta_rows,
+            'benchmark_rows': benchmark_rows,
+            'error': error,
+        }
+        return render(request, 'admin/data_comparison_chart_partial.html', context)
 
     def industry_performance_view(self, request):
         """Dedicated full industry performance page."""

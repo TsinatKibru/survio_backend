@@ -1,0 +1,147 @@
+{% if error %}
+<div style="padding: 30px; text-align:center; color: #c0392b;">
+  <strong>⚠ {{ error }}</strong>
+</div>
+
+{% elif mode == 'period' %}
+<!-- Period Comparison: grouped bar chart + delta table -->
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;">
+  <!-- Chart -->
+  <div style="flex:2; min-width:280px;">
+    <canvas id="comparisonChart" style="max-height:380px;"></canvas>
+  </div>
+
+  <!-- Delta table -->
+  {% if delta_rows %}
+  <div style="flex:1; min-width:220px; overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead>
+        <tr style="background:var(--primary,#417690); color:#fff;">
+          <th style="padding:8px 10px; text-align:left;">Metric</th>
+          <th style="padding:8px 10px; text-align:right;">Period A</th>
+          <th style="padding:8px 10px; text-align:right;">Period B</th>
+          <th style="padding:8px 10px; text-align:right;">Δ Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in delta_rows %}
+        <tr style="border-bottom:1px solid var(--hairline-color,#eee);">
+          <td style="padding:7px 10px; color:var(--body-fg,#111);">{{ row.label }}</td>
+          <td style="padding:7px 10px; text-align:right; color:var(--body-quiet-color,#555);">{{ row.a }}</td>
+          <td style="padding:7px 10px; text-align:right; color:var(--body-quiet-color,#555);">{{ row.b }}</td>
+          <td style="padding:7px 10px; text-align:right; font-weight:700;">
+            {% if row.pct is not None %}
+              {% if row.pct >= 0 %}
+              <span style="color:#0d9e6c;">↑ {{ row.pct }}%</span>
+              {% else %}
+              <span style="color:#e74a3b;">↓ {{ row.pct|slice:"1:" }}%</span>
+              {% endif %}
+            {% else %}
+              <span style="color:var(--body-quiet-color,#aaa);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function() {
+  var ctx = document.getElementById('comparisonChart');
+  if (!ctx) return;
+  var raw = {{ chart_data_json|safe }};
+  if (window._cmpChart) window._cmpChart.destroy();
+  window._cmpChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: raw.labels,
+      datasets: raw.datasets.map(function(ds) {
+        return Object.assign({}, ds, {borderRadius: 5, borderWidth: 0});
+      }),
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { ticks: { maxRotation: 45, font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+})();
+</script>
+
+{% elif mode == 'benchmark' %}
+<!-- Factory Benchmark: horizontal bar chart -->
+{% if benchmark_rows %}
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;">
+  <div style="flex:2; min-width:280px;">
+    <canvas id="benchmarkChart" style="max-height:420px;"></canvas>
+  </div>
+
+  <div style="flex:1; min-width:200px; overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead>
+        <tr style="background:var(--primary,#417690); color:#fff;">
+          <th style="padding:8px 10px; text-align:left;">Factory</th>
+          <th style="padding:8px 10px; text-align:right;">Avg. Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in benchmark_rows %}
+        <tr style="border-bottom:1px solid var(--hairline-color,#eee);">
+          <td style="padding:7px 10px;">{{ row.0 }}</td>
+          <td style="padding:7px 10px; text-align:right; font-weight:700;">{{ row.1 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function() {
+  var ctx = document.getElementById('benchmarkChart');
+  if (!ctx) return;
+  var raw = {{ chart_data_json|safe }};
+  if (window._benchChart) window._benchChart.destroy();
+  window._benchChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: raw.labels,
+      datasets: raw.datasets.map(function(ds) {
+        return Object.assign({}, ds, {borderRadius: 5, borderWidth: 0});
+      }),
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: { size: 11 } } },
+        y: { ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+})();
+</script>
+{% else %}
+<div style="padding:40px; text-align:center; color:var(--body-quiet-color,#aaa);">
+  No data found for the selected filters.
+</div>
+{% endif %}
+
+{% else %}
+<div style="padding:40px; text-align:center; color:var(--body-quiet-color,#aaa);">
+  No data to display.
+</div>
+{% endif %}

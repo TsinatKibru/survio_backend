@@ -1,0 +1,236 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<style>
+  #content-main { padding: 20px 24px; }
+
+  .cmp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .cmp-title { font-size: 22px; font-weight: 800; margin: 0; }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--hairline-color, #e0e0e0);
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--body-quiet-color, #666);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+  }
+  .tab-btn.active {
+    color: var(--primary, #417690);
+    border-bottom-color: var(--primary, #417690);
+  }
+
+  /* Filter card */
+  .filter-card {
+    background: var(--darkened-bg, #f8f9fa);
+    border: 1px solid var(--hairline-color, #e0e0e0);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 180px; flex: 1; }
+  .filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--body-quiet-color, #666); }
+  .filter-select {
+    padding: 7px 10px;
+    border: 1px solid var(--hairline-color, #ccc);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--body-bg, #fff);
+    color: var(--body-fg, #111);
+    width: 100%;
+  }
+  .run-btn {
+    padding: 8px 22px;
+    background: var(--primary, #417690);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    align-self: flex-end;
+    white-space: nowrap;
+  }
+  .run-btn:hover { opacity: .88; }
+
+  /* Chart area */
+  #chart-area {
+    background: var(--darkened-bg, #fff);
+    border: 1px solid var(--hairline-color, #e0e0e0);
+    border-radius: 10px;
+    padding: 20px;
+    min-height: 120px;
+  }
+
+  .placeholder-msg {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--body-quiet-color, #aaa);
+    font-size: 14px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="cmp-header">
+    <h1 class="cmp-title">📊 Data Comparison</h1>
+    <a href="{% url 'survio_admin:index' %}" style="font-size:13px; color:var(--primary,#417690); text-decoration:none;">← Back to Dashboard</a>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn {% if mode == 'period' %}active{% endif %}" onclick="switchMode('period')">
+      Period vs Period
+    </button>
+    <button class="tab-btn {% if mode == 'benchmark' %}active{% endif %}" onclick="switchMode('benchmark')">
+      Factory Benchmark
+    </button>
+  </div>
+
+  <!-- Period Comparison Filters -->
+  <div id="filter-period" {% if mode != 'period' %}style="display:none"{% endif %}>
+    <form id="period-form" class="filter-card"
+          hx-get="/admin/data-comparison/chart/"
+          hx-target="#chart-area"
+          hx-trigger="submit"
+          hx-include="#period-form">
+      <input type="hidden" name="mode" value="period">
+
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select name="category" class="filter-select" onchange="this.form.submit(); reloadPeriods(this.value);">
+          <option value="">— Select —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.code }}" {% if selected_cat and selected_cat.code == cat.code %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Period A</label>
+        <select name="period_a" class="filter-select">
+          <option value="">— Select Period A —</option>
+          {% for p in periods %}
+          <option value="{{ p.id }}" {% if period_a_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Period B</label>
+        <select name="period_b" class="filter-select">
+          <option value="">— Select Period B —</option>
+          {% for p in periods %}
+          <option value="{{ p.id }}" {% if period_b_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Industry (optional)</label>
+        <select name="industry" class="filter-select">
+          <option value="">All Industries</option>
+          {% for ind in industries %}
+          <option value="{{ ind.id }}" {% if industry_id == ind.id|stringformat:"s" %}selected{% endif %}>{{ ind.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="run-btn">Compare →</button>
+    </form>
+  </div>
+
+  <!-- Factory Benchmark Filters -->
+  <div id="filter-benchmark" {% if mode != 'benchmark' %}style="display:none"{% endif %}>
+    <form id="benchmark-form" class="filter-card"
+          hx-get="/admin/data-comparison/chart/"
+          hx-target="#chart-area"
+          hx-trigger="submit"
+          hx-include="#benchmark-form">
+      <input type="hidden" name="mode" value="benchmark">
+
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select name="category" class="filter-select" onchange="this.form.submit();">
+          <option value="">— Select —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.code }}" {% if selected_cat and selected_cat.code == cat.code %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Reporting Period</label>
+        <select name="period" class="filter-select">
+          <option value="">— Select Period —</option>
+          {% for p in periods %}
+          <option value="{{ p.id }}" {% if period_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group" style="min-width: 260px;">
+        <label class="filter-label">Metric (Question)</label>
+        <select name="question" class="filter-select">
+          <option value="">— Select Metric —</option>
+          {% for q in questions %}
+          <option value="{{ q.id }}" {% if question_id == q.id|stringformat:"s" %}selected{% endif %}>{{ q.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="run-btn">Benchmark →</button>
+    </form>
+  </div>
+
+  <!-- Chart / Results Area -->
+  <div id="chart-area">
+    <div class="placeholder-msg">
+      Select filters above and click <strong>Compare</strong> or <strong>Benchmark</strong> to generate a chart.
+    </div>
+  </div>
+</div>
+
+
+
+<script src="https://unpkg.com/htmx.org@1.9.6/dist/htmx.min.js"></script>
+<script>
+  function switchMode(mode) {
+    document.getElementById('filter-period').style.display    = mode === 'period'    ? '' : 'none';
+    document.getElementById('filter-benchmark').style.display = mode === 'benchmark' ? '' : 'none';
+    // update active tab
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    event.target.classList.add('active');
+    // clear chart area
+    document.getElementById('chart-area').innerHTML =
+      '<div class="placeholder-msg">Select filters above and click <strong>Compare</strong> or <strong>Benchmark</strong> to generate a chart.</div>';
+  }
+</script>
+{% endblock %}

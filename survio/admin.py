@@ -102,13 +102,33 @@ class SurvioAdminSite(admin.AdminSite):
 
     # ── Comparison helpers ─────────────────────────────────────────────────
     def _get_numeric_questions(self, category_code):
-        """All number/decimal questions for a given category's forms."""
+        """Return deduplicated normalized question labels for a category.
+        Lists like [(norm_label,)] so the template can iterate a .label property-alike."""
+        import re as _re
         from forms_builder.models import Question
-        qs = Question.objects.filter(
-            section__form__category__code=category_code,
-            question_type__in=['number', 'decimal'],
-        ).select_related('section__form').order_by('section__form__id', 'order')
-        return qs
+
+        def _normalize(label):
+            label = _re.sub(r'\s+\d+\s*(\([^)]+\))', r' \1', label)
+            label = _re.sub(r'\s+\d+$', '', label)
+            return label.strip()
+
+        raw = (
+            Question.objects
+            .filter(
+                section__form__category__code=category_code,
+                question_type__in=['number', 'decimal'],
+            )
+            .values_list('label', flat=True)
+            .distinct()
+        )
+        seen = set()
+        result = []
+        for lbl in sorted(raw):
+            norm = _normalize(lbl)
+            if norm not in seen:
+                seen.add(norm)
+                result.append({'label': norm, 'id': norm})  # id = norm_label (passed as URL param)
+        return result
 
     def _aggregate_by_period(self, category_code, period_id, industry_id=None):
         """Return {norm_label: (label, avg_val, sum_val, count)} for one period.
@@ -160,32 +180,59 @@ class SurvioAdminSite(admin.AdminSite):
             result[norm] = (norm, avg, round(total, 2), cnt)
         return result
 
-    def _aggregate_by_industry(self, category_code, period_id, question_id):
-        """Return [(industry_name, avg_val)] sorted descending for one question+period."""
+    def _aggregate_by_industry(self, category_code, period_id, norm_label):
+        """Return [(industry_name, avg_val)] for a normalized question label+period.
+        Aggregates across all numbered variants matching the base label pattern."""
+        import re as _re
+        from forms_builder.models import Question
         from submissions.models import Answer
-        from django.db.models import Avg
+        from django.db.models import Avg, Sum, Count
+
+        # Find all question IDs whose normalized label matches norm_label
+        all_labels = (
+            Question.objects
+            .filter(
+                section__form__category__code=category_code,
+                question_type__in=['number', 'decimal'],
+            )
+            .values_list('id', 'label')
+        )
+
+        def _normalize(label):
+            label = _re.sub(r'\s+\d+\s*(\([^)]+\))', r' \1', label)
+            label = _re.sub(r'\s+\d+$', '', label)
+            return label.strip()
+
+        matching_ids = [qid for qid, lbl in all_labels if _normalize(lbl) == norm_label]
+        if not matching_ids:
+            return []
+
+        # Aggregate per factory across all matching question IDs
         rows = (
             Answer.objects
             .filter(
                 submission__period_id=period_id,
                 submission__status='submitted',
-                question_id=question_id,
+                question_id__in=matching_ids,
                 question__section__form__category__code=category_code,
             )
-            .values('submission__organization__name')
-            .annotate(avg=Avg('value'))
-            .order_by('-avg')
+            .values('submission__organization__name', 'submission__organization_id')
+            .annotate(total=Sum('value'), cnt=Count('id'))
+            .order_by('-total')
         )
         result = []
         for row in rows:
             try:
+                total = float(row['total'] or 0)
+                cnt = int(row['cnt'] or 1)
                 result.append((
                     row['submission__organization__name'] or 'Unknown',
-                    round(float(row['avg'] or 0), 2),
+                    round(total / cnt, 2),
                 ))
             except (TypeError, ValueError):
                 pass
         return result
+
 
     # ── Comparison views ───────────────────────────────────────────────────
     def data_comparison_view(self, request):
@@ -286,25 +333,23 @@ class SurvioAdminSite(admin.AdminSite):
 
             elif mode == 'benchmark':
                 period_id = request.GET.get('period', '')
-                question_id = request.GET.get('question', '')
-                if not (cat_code and period_id and question_id):
+                norm_label = request.GET.get('question', '')  # now a normalized label string
+                if not (cat_code and period_id and norm_label):
                     error = 'Please select a category, period, and metric.'
                 else:
                     period = ReportingPeriod.objects.get(id=period_id)
-                    from forms_builder.models import Question
-                    q = Question.objects.get(id=question_id)
-                    rows = self._aggregate_by_industry(cat_code, period_id, question_id)
+                    rows = self._aggregate_by_industry(cat_code, period_id, norm_label)
                     benchmark_rows = rows
                     chart_data = {
                         'type': 'horizontalBar',
                         'labels': [r[0] for r in rows],
                         'datasets': [{
-                            'label': q.label,
+                            'label': norm_label,
                             'data': [r[1] for r in rows],
                             'backgroundColor': 'rgba(65,118,144,0.75)',
                         }],
                         'period_label': period.label,
-                        'question_label': q.label,
+                        'question_label': norm_label,
                     }
         except Exception as e:
             error = str(e)

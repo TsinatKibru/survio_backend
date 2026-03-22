@@ -5,6 +5,7 @@ from survio.admin import survio_admin_site
 class QuestionOptionInline(admin.TabularInline):
     model = QuestionOption
     extra = 1
+    exclude = ('value',)
 
 class QuestionInline(admin.StackedInline):
     model = Question

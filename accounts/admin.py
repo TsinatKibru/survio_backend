@@ -5,16 +5,16 @@ from survio.admin import survio_admin_site
 
 @admin.register(Industry, site=survio_admin_site)
 class IndustryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'is_active')
+    list_display = ('name', 'is_active')
     search_fields = ('name',)
-    prepopulated_fields = {'code': ('name',)}
+    exclude = ('code',)
     list_per_page = 10
 
 @admin.register(Category, site=survio_admin_site)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'is_active')
+    list_display = ('name', 'is_active')
     search_fields = ('name',)
-    prepopulated_fields = {'code': ('name',)}
+    exclude = ('code',)
     list_per_page = 10
 
 class CustomUserAdmin(UserAdmin):

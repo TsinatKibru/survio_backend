@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.text import slugify
 
 
 class Industry(models.Model):
@@ -11,6 +12,11 @@ class Industry(models.Model):
     class Meta:
         verbose_name_plural = 'Industries'
         ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name).replace('-', '_')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -24,6 +30,11 @@ class Category(models.Model):
     class Meta:
         verbose_name_plural = 'Categories'
         ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name).replace('-', '_')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

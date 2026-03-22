@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 from django.conf import settings
 
 
@@ -163,6 +164,14 @@ class QuestionOption(models.Model):
 
     class Meta:
         ordering = ['order']
+
+    def save(self, *args, **kwargs):
+        if not self.value:
+            # Match the pattern used in seed_data.py: lowercase, underscores, alphanumeric only
+            import re
+            clean = self.label.lower().replace(' ', '_')
+            self.value = re.sub(r'[^a-zA-Z0-9_]', '', clean)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.question.label[:30]} → {self.label}'

@@ -2,6 +2,9 @@ import json
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
 from forms_builder.models import Form, ReportingPeriod
 from submissions.models import Submission
 from accounts.models import User, Industry, Category
@@ -812,9 +815,64 @@ class SurvioAdminSite(admin.AdminSite):
             'yesno_summary': yesno_summary,
         }
 
+        if request.GET.get('export') == 'excel':
+            return self.export_question_analytics_excel(request, context)
+
         if request.headers.get('HX-Request') or request.GET.get('partial'):
             return render(request, 'admin/question_analytics_partial.html', context)
         return render(request, 'admin/question_analytics.html', context)
+
+    def export_question_analytics_excel(self, request, context):
+        """Generates an Excel file from the provided analytics context."""
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Question Analytics"
+
+        selected_cat = context.get('selected_cat')
+        cat_name = selected_cat.name if selected_cat else "All"
+        
+        # Header Info
+        ws.append(["Strategic Data Explorer - Question Analytics"])
+        ws.append(["Category", cat_name])
+        ws.append(["Date Range", f"{context.get('start_date')} to {context.get('end_date')}"])
+        ws.append([]) # Spacer
+
+        # Table Headers
+        headers = ["Question / Indicator", "Average (%)", "Total Sum", "Sample Size (N)", "Unit"]
+        ws.append(headers)
+
+        # Style headers
+        for cell in ws[5]:
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+
+        # Data Rows
+        for item in context.get('explorer_data', []):
+            avg_display = f"{item['avg']}%" if item['type'] == 'yes_no' else item['avg']
+            row = [
+                item['label'],
+                avg_display,
+                item['total_val'],
+                item['sample_size'],
+                item['unit']
+            ]
+            ws.append(row)
+
+        # Adjust column widths
+        ws.column_dimensions['A'].width = 60
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['C'].width = 15
+        ws.column_dimensions['D'].width = 15
+        ws.column_dimensions['E'].width = 15
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        filename = f"question_analytics_{cat_name.lower().replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        wb.save(response)
+        return response
 
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}

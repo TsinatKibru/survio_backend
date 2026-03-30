@@ -21,7 +21,6 @@
     display: none !important;
   }
 
-  /* ── Equal width for admin input fields ─────────────────────────────── */
   .vTextField, 
   .vLargeTextField, 
   .vURLField, 
@@ -29,16 +28,23 @@
   .vNumberField, 
   .vDateField, 
   .vTimeField,
-  div.form-row input[type="text"], 
+  div.form-row input[type="text"]:not(.selector input), 
   div.form-row input[type="password"], 
-  div.form-row select, 
-  div.form-row textarea,
+  div.form-row select:not(.selector select), 
+  div.form-row textarea:not(.selector textarea),
   .form-row .related-widget-wrapper {
     width: 100% !important;
     max-width: 380px !important;
     box-sizing: border-box !important;
   }
   
+  /* Reset for Django's multi-select selector widget to prevent layout breakage */
+  .selector select, 
+  .selector input {
+    width: inherit !important;
+    max-width: inherit !important;
+  }
+
   .form-row select {
     padding-right: 32px !important; /* spacing for arrow */
   }

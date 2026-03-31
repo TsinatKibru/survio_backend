@@ -40,17 +40,21 @@ class Category(models.Model):
         return self.name
 
 
-class User(AbstractUser):
-    ROLE_SUPERADMIN = 'superadmin'
-    ROLE_ADMIN = 'admin'
-    ROLE_USER = 'user'
-    ROLE_CHOICES = [
-        (ROLE_SUPERADMIN, 'Super Admin'),
-        (ROLE_ADMIN, 'Admin'),
-        (ROLE_USER, 'Field User'),
-    ]
+class Role(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=50, unique=True)
+    permissions = models.ManyToManyField('auth.Permission', blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_USER)
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class User(AbstractUser):
+    # New Dynamic Role field
+    role_obj = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='users')
+    
     phone = models.CharField(max_length=20, blank=True)
     organization = models.CharField(max_length=200, blank=True)
     position = models.CharField(max_length=200, blank=True)
@@ -61,13 +65,38 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        """
+        Auto-sync is_staff based on role:
+        - superadmin/admin → is_staff=True (can access Django admin panel)
+        - companyuser      → is_staff=False (Flutter app only)
+        - Others           → Respect existing is_staff value
+        """
+        if self.role_obj:
+            if self.role_obj.code in ('superadmin', 'admin'):
+                self.is_staff = True
+            elif self.role_obj.code == 'companyuser':
+                if not self.is_superuser:
+                    self.is_staff = False
+            # For other roles (like Auditor), we don't force it to False 
+            # so the admin can manually grant is_staff in the dashboard.
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f'{self.get_full_name() or self.username} ({self.role})'
+        role_label = self.role_obj.code if self.role_obj else 'No Role'
+        return f'{self.get_full_name() or self.username} ({role_label})'
+
+    @property
+    def role(self):
+        """Compatibility property — returns role code string for API/Flutter."""
+        return self.role_obj.code if self.role_obj else None
 
     @property
     def is_super_admin(self):
-        return self.role == self.ROLE_SUPERADMIN
+        return self.role == 'superadmin'
 
     @property
     def is_admin_or_above(self):
-        return self.role in [self.ROLE_SUPERADMIN, self.ROLE_ADMIN] or self.is_superuser
+        if self.is_superuser:
+            return True
+        return self.role in ['superadmin', 'admin']

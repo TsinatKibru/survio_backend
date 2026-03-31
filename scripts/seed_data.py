@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'survio.settings')
 django.setup()
 
-from accounts.models import Industry, Category, User
+from accounts.models import Industry, Category, User, Role
 from forms_builder.models import Form, Section, Question, QuestionOption, ReportingPeriod
 
 def seed_data():
@@ -21,7 +21,46 @@ def seed_data():
     Question.objects.all().delete()
     Industry.objects.all().delete()
     Category.objects.all().delete()
+    # User.objects.all().delete() # Optional: keep users or delete them? 
+    # Usually seed script doesn't delete users unless specified.
     
+    print("Seeding roles...")
+    roles = {
+        'superadmin': Role.objects.update_or_create(
+            code='superadmin',
+            defaults={
+                'name': 'Super Admin',
+                'description': (
+                    'Global system administrator. '
+                    'Full access to all data, settings, and users across all industries and categories. '
+                    'Does NOT require industry or category assignment.'
+                )
+            }
+        )[0],
+        'admin': Role.objects.update_or_create(
+            code='admin',
+            defaults={
+                'name': 'Admin',
+                'description': (
+                    'Organization-level administrator. '
+                    'Can manage users and data within their assigned category/industry. '
+                    'Cannot modify system settings or manage other admins.'
+                )
+            }
+        )[0],
+        'companyuser': Role.objects.update_or_create(
+            code='companyuser',
+            defaults={
+                'name': 'Company User',
+                'description': (
+                    'Standard factory/company user. '
+                    'Can submit and view forms assigned to their industry. '
+                    'Must be linked to an industry and category.'
+                )
+            }
+        )[0],
+    }
+
     print("Seeding categories...")
     categories = {
         'edible_oil': Category.objects.get_or_create(name='Edible Oil', code='edible_oil')[0],

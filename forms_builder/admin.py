@@ -57,8 +57,8 @@ class QuestionAdmin(admin.ModelAdmin):
     inlines = [QuestionOptionInline]
     list_per_page = 10
 
-@admin.register(FormAssignment, site=survio_admin_site)
 class FormAssignmentAdmin(admin.ModelAdmin):
     list_display = ('form', 'industry', 'user', 'is_active')
     list_filter = ('is_active', 'form')
     list_per_page = 10
+    # FormAssignment is managed as an inline on the Form admin — no standalone dashboard entry needed.

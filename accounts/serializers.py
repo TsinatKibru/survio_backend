@@ -1,9 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
-from .models import Industry, Category
+from .models import Industry, Category, Role
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ['name', 'code', 'description']
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -50,6 +56,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     industry = IndustrySerializer(read_only=True)
     category = CategorySerializer(read_only=True)
+    role = serializers.SlugRelatedField(slug_field='code', source='role_obj', read_only=True)
     industry_id = serializers.PrimaryKeyRelatedField(
         queryset=Industry.objects.all(), source='industry', write_only=True, required=False, allow_null=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -92,7 +99,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-        user = User(**validated_data)
+        # Assign default 'companyuser' role on registration
+        role_obj = Role.objects.get(code='companyuser')
+        user = User(role_obj=role_obj, **validated_data)
         user.set_password(password)
         user.save()
         return user
@@ -102,6 +111,8 @@ class AdminUserSerializer(serializers.ModelSerializer):
     """For admin managing users."""
     industry = IndustrySerializer(read_only=True)
     category = CategorySerializer(read_only=True)
+    role = serializers.SlugRelatedField(
+        slug_field='code', source='role_obj', queryset=Role.objects.all(), required=False)
     industry_id = serializers.PrimaryKeyRelatedField(
         queryset=Industry.objects.all(), source='industry', write_only=True, required=False, allow_null=True)
     category_id = serializers.PrimaryKeyRelatedField(

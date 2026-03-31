@@ -240,6 +240,9 @@ class SurvioAdminSite(admin.AdminSite):
     # ── Comparison views ───────────────────────────────────────────────────
     def data_comparison_view(self, request):
         """Main Data Comparison page — Period Comparison + Factory Benchmark tabs."""
+        if not request.user.has_perm('submissions.view_submission') and not request.user.is_superuser:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
         from forms_builder.models import ReportingPeriod
 
         categories = Category.objects.filter(forms__isnull=False).distinct().order_by('name')
@@ -369,12 +372,15 @@ class SurvioAdminSite(admin.AdminSite):
 
     def industry_performance_view(self, request):
         """Dedicated full industry performance page."""
+        if not request.user.has_perm('accounts.view_industry') and not request.user.is_superuser:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
         from django.core.paginator import Paginator
 
         user = request.user
         submissions_qs = Submission.objects.all()
 
-        if user.role == User.ROLE_ADMIN and user.category:
+        if user.role == 'admin' and user.category:
             submissions_qs = submissions_qs.filter(food_category=user.category.code)
 
         today = timezone.now().date()
@@ -448,6 +454,9 @@ class SurvioAdminSite(admin.AdminSite):
 
     def question_analytics_view(self, request):
         """View for advanced analytics with real-time aggregation & drill-down."""
+        if not request.user.has_perm('submissions.view_submission') and not request.user.is_superuser:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
         from forms_builder.models import Question
         from accounts.models import Industry
         from submissions.models import Answer
@@ -460,7 +469,7 @@ class SurvioAdminSite(admin.AdminSite):
         # Get available categories for this user
         available_cats = Category.objects.filter(is_active=True)
         user = request.user
-        if user.role == User.ROLE_ADMIN and user.category:
+        if user.role == 'admin' and user.category:
             available_cats = available_cats.filter(code=user.category.code)
             # Override cat_code if restricted
             cat_code = user.category.code
@@ -883,7 +892,7 @@ class SurvioAdminSite(admin.AdminSite):
         forms_qs = Form.objects.filter(is_active=True)
         users_qs = User.objects.all()
 
-        if user.role == User.ROLE_ADMIN and user.category:
+        if user.role == 'admin' and user.category:
             submissions_qs = submissions_qs.filter(food_category=user.category.code)
             users_qs = users_qs.filter(category=user.category)
             forms_qs = forms_qs.filter(category__in=[user.category.code, 'all'])
@@ -892,7 +901,12 @@ class SurvioAdminSite(admin.AdminSite):
         else:
             extra_context['is_restricted'] = False
 
-        # ── Date Filtering ──────────────────────────────────────────────────────
+        # Check permissions for dashboard components
+        extra_context['can_view_industry_perf'] = request.user.has_perm('accounts.view_industry') or user.is_superuser
+        extra_context['can_view_analytics'] = request.user.has_perm('submissions.view_submission') or user.is_superuser
+        extra_context['can_view_users'] = request.user.has_perm('accounts.view_user') or user.is_superuser
+        
+        # ── Dashboard Statistics ──────────────────────────────────────────────────────
         today = timezone.now().date()
         raw_start = request.GET.get('start_date')
         raw_end = request.GET.get('end_date')

@@ -211,10 +211,12 @@
   </div>
 
   <div class="grid-4">
+    {% if can_view_users %}
     <div class="module stat-card">
       <h3>Users</h3>
       <div class="stat-value">{{ total_users }}</div>
     </div>
+    {% endif %}
     <div class="module stat-card cyan">
       <h3>Submissions</h3>
       <div class="stat-value">{{ total_submissions }}</div>
@@ -260,6 +262,7 @@
         >
       </h2>
       <div style="display: flex; gap: 16px">
+        {% if can_view_analytics %}
         <a
           href="{% url 'survio_admin:question-analytics' %}"
           style="
@@ -270,6 +273,8 @@
           "
           >Strategic Data Explorer →</a
         >
+        {% endif %}
+        {% if can_view_industry_perf %}
         <a
           href="{% url 'survio_admin:industry-performance' %}"
           style="
@@ -280,8 +285,10 @@
           "
           >See All Industries →</a
         >
+        {% endif %}
       </div>
     </div>
+    {% if can_view_industry_perf %}
     <table class="perf-table" id="perfTable">
       <thead>
         <tr>
@@ -310,6 +317,9 @@
         {% endfor %}
       </tbody>
     </table>
+    {% else %}
+    <p style="text-align: center; padding: 20px; opacity: 0.7;">You do not have permission to view industry performance metrics.</p>
+    {% endif %}
   </div>
 </div>
 

@@ -47,6 +47,12 @@ class Role(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            from django.utils.text import slugify
+            self.code = slugify(self.name).replace('-', '_')
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.name} ({self.code})"
 

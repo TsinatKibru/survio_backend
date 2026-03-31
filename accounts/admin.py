@@ -2,11 +2,15 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django import forms
 from django.contrib.auth.models import Permission
+from django.http import JsonResponse
+from django.urls import path
+
 from .models import User, Industry, Category, Role
 from survio.admin import survio_admin_site
 
 # Only show permissions from these app labels in the Role form
 RELEVANT_APP_LABELS = {'accounts', 'forms_builder', 'submissions', 'notifications', 'ads'}
+
 
 class RoleAdminForm(forms.ModelForm):
     permissions = forms.ModelMultipleChoiceField(
@@ -20,7 +24,7 @@ class RoleAdminForm(forms.ModelForm):
 
     class Meta:
         model = Role
-        fields = '__all__'
+        exclude = ('code',)
 
 
 @admin.register(Role, site=survio_admin_site)
@@ -32,7 +36,7 @@ class RoleAdmin(admin.ModelAdmin):
     filter_horizontal = ('permissions',)
     # Remove 'user_permissions' from the User form -- now managed via Role
     fieldsets = (
-        (None, {'fields': ('name', 'code', 'description')}),
+        (None, {'fields': ('name', 'description')}),
         ('Permissions for this Role', {
             'description': 'Assign Django permissions to this role. All users with this role inherit these permissions.',
             'fields': ('permissions',),
@@ -61,11 +65,35 @@ class CategoryAdmin(admin.ModelAdmin):
     list_per_page = 10
 
 
+# ---------------------------------------------------------------------------
+# Form with server-side validation for category / industry consistency
+# ---------------------------------------------------------------------------
+
+class CustomUserAdminForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get('category')
+        industry = cleaned_data.get('industry')
+
+        if industry and category and industry.category != category:
+            raise forms.ValidationError(
+                f'The selected industry "{industry}" does not belong to '
+                f'the selected category "{category}". '
+                'Please choose an industry that matches the category.'
+            )
+        return cleaned_data
+
+
 class CustomUserAdmin(UserAdmin):
+    form = CustomUserAdminForm
     list_display = ('username', 'email', 'role', 'industry', 'category', 'is_active')
     list_filter = ('role_obj', 'is_active', 'is_staff', 'industry', 'category')
-    
-    # Base fieldsets (no user_permissions — managed via Role now)
+
+    # Base fieldsets — category FIRST, then industry
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
@@ -77,8 +105,8 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('role_obj', 'phone', 'organization', 'position', 'profile_picture', 'is_onboarded'),
         }),
         ('Factory / Industry', {
-            'description': 'Not required for Superadmin and Admin roles.',
-            'fields': ('industry', 'category'),
+            'description': 'Not required for Superadmin and Admin roles. Select a Category first, then choose the Industry.',
+            'fields': ('category', 'industry'),  # category before industry
         }),
     )
 
@@ -91,11 +119,44 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('role_obj', 'first_name', 'last_name', 'email', 'phone', 'organization', 'position'),
         }),
         ('Factory / Industry', {
-            'description': 'Leave blank for Superadmin / Admin roles.',
-            'fields': ('industry', 'category'),
+            'description': 'Leave blank for Superadmin / Admin roles. Select a Category first, then choose the Industry.',
+            'fields': ('category', 'industry'),  # category before industry
         }),
     )
     list_per_page = 20
+
+    class Media:
+        js = ('js/admin_chained_dropdown.js',)
+
+    # ------------------------------------------------------------------
+    # Admin-scoped endpoint: /admin/accounts/user/industry-by-category/
+    # Protected by admin_site.admin_view — requires admin login
+    # ------------------------------------------------------------------
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'industry-by-category/',
+                self.admin_site.admin_view(self.industry_by_category),
+                name='user_industry_by_category',
+            ),
+        ]
+        return custom_urls + urls
+
+    def industry_by_category(self, request):
+        category_id = request.GET.get('category_id', '').strip()
+        if not category_id:
+            return JsonResponse([], safe=False)
+        try:
+            industries = list(
+                Industry.objects.filter(
+                    category_id=int(category_id), is_active=True
+                ).order_by('name').values('id', 'name')
+            )
+        except (ValueError, TypeError):
+            industries = []
+        return JsonResponse(industries, safe=False)
 
     def get_readonly_fields(self, request, obj=None):
         """

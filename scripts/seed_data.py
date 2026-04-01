@@ -14,15 +14,14 @@ from accounts.models import Industry, Category, User, Role
 from forms_builder.models import Form, Section, Question, QuestionOption, ReportingPeriod
 
 def seed_data():
-    print("Clearing old data...")
+    print("Clearing old form data...")
     ReportingPeriod.objects.all().delete()
     Form.objects.all().delete()
     Section.objects.all().delete()
     Question.objects.all().delete()
-    Industry.objects.all().delete()
-    Category.objects.all().delete()
-    # User.objects.all().delete() # Optional: keep users or delete them? 
-    # Usually seed script doesn't delete users unless specified.
+    
+    # We DO NOT delete Industry and Category anymore so existing 
+    # users don't lose their foreign key relationships (Upsert approach).
     
     print("Seeding roles...")
     roles = {
@@ -43,8 +42,7 @@ def seed_data():
                 'name': 'Admin',
                 'description': (
                     'Organization-level administrator. '
-                    'Can manage users and data within their assigned category/industry. '
-                    'Cannot modify system settings or manage other admins.'
+                    'Can view industry, form, question, reporting period, section, answer, and submission.'
                 )
             }
         )[0],

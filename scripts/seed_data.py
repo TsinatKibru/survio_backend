@@ -182,13 +182,22 @@ def seed_data():
     QuestionOption.objects.create(question=q_batch_doc, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_batch_doc, label="No", value="no", order=2)
 
+    Question.objects.create(
+        section=s4_oil,
+        label="Upload photo of batch mixing time documentation",
+        question_type='image',
+        depends_on=q_batch_doc,
+        depends_on_value="yes",
+        order=5
+    )
+
     q_batch_time = Question.objects.create(
         section=s4_oil, 
         label="If the technology is batch, indicate mixing time", 
         question_type='select', 
         depends_on=q_oil_tech, 
         depends_on_value="batch",
-        order=5
+        order=6
     )
     time_opts = ["Less than 30 min", "30 - 60 min", "60 - 90 min", "Above 90 min"]
     for i, opt in enumerate(time_opts):
@@ -200,7 +209,7 @@ def seed_data():
         question_type='decimal', 
         depends_on=q_oil_tech, 
         depends_on_value="batch",
-        order=6
+        order=7
     )
 
     # --- Two Stage Dependents ---
@@ -210,7 +219,7 @@ def seed_data():
         question_type='yes_no', 
         depends_on=q_oil_tech, 
         depends_on_value="two_stage",
-        order=7
+        order=8
     )
     QuestionOption.objects.create(question=q_two_doc, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_two_doc, label="No", value="no", order=2)
@@ -221,7 +230,7 @@ def seed_data():
         question_type='decimal', 
         depends_on=q_oil_tech, 
         depends_on_value="two_stage",
-        order=8
+        order=9
     )
     Question.objects.create(
         section=s4_oil, 
@@ -229,7 +238,7 @@ def seed_data():
         question_type='decimal', 
         depends_on=q_oil_tech, 
         depends_on_value="two_stage",
-        order=9
+        order=10
     )
 
     s5_oil = Section.objects.create(form=form_oil, title="ADDITIONAL PRODUCT INFO (EDIBLE OIL)", order=4)
@@ -294,13 +303,22 @@ def seed_data():
     QuestionOption.objects.create(question=q_fl_cont_rate, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_fl_cont_rate, label="No", value="no", order=2)
 
+    Question.objects.create(
+        section=s4_flour,
+        label="Photo of the flour production rate log",
+        question_type='image',
+        depends_on=q_fl_cont_rate,
+        depends_on_value="yes",
+        order=3
+    )
+
     q_fl_cont_speed = Question.objects.create(
         section=s4_flour, 
         label="If the technology is continuous, do you periodically adjust and record micro feeder speed", 
         question_type='yes_no', 
         depends_on=q_flour_tech, 
         depends_on_value="continuous",
-        order=3
+        order=4
     )
     QuestionOption.objects.create(question=q_fl_cont_speed, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_fl_cont_speed, label="No", value="no", order=2)
@@ -311,7 +329,7 @@ def seed_data():
         question_type='multiselect', 
         depends_on=q_flour_tech, 
         depends_on_value="continuous",
-        order=4
+        order=5
     )
     fl_challenge_opts = ["Micro feeder operation (calibration, speed adjustment)", "Maintenance", "Electrical (power) connection systems", "Proper functionality inspection", "Other"]
     for i, opt in enumerate(fl_challenge_opts):
@@ -324,7 +342,7 @@ def seed_data():
         question_type='yes_no', 
         depends_on=q_flour_tech, 
         depends_on_value="batch",
-        order=5
+        order=6
     )
     QuestionOption.objects.create(question=q_fl_batch_doc, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_fl_batch_doc, label="No", value="no", order=2)
@@ -335,7 +353,7 @@ def seed_data():
         question_type='select', 
         depends_on=q_flour_tech, 
         depends_on_value="batch",
-        order=6
+        order=7
     )
     fl_time_opts = ["Less than 5 min", "5 min", "10 min", "15 min", "20 min and above"]
     for i, opt in enumerate(fl_time_opts):
@@ -392,6 +410,15 @@ def seed_data():
     q_outsource = Question.objects.create(section=s6_salt, label="Does the company outsource quality analysis?", question_type='yes_no', order=1)
     QuestionOption.objects.create(question=q_outsource, label="Yes", value="yes", order=1)
     QuestionOption.objects.create(question=q_outsource, label="No", value="no", order=2)
+
+    Question.objects.create(
+        section=s6_salt,
+        label="Laboratory Certificate / Outsourced Analysis Report",
+        question_type='image',
+        depends_on=q_outsource,
+        depends_on_value='yes',
+        order=2
+    )
 
     s7_salt = Section.objects.create(form=form_salt, title="AVERAGE RAW MATERIAL PURCHASE PRICE", order=7)
     Question.objects.create(section=s7_salt, label="Washed Salt (Birr/kg)", question_type='decimal', order=1)

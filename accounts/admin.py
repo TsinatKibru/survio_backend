@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserChangeForm
 from django import forms
 from django.contrib.auth.models import Permission
 from django.http import JsonResponse
@@ -69,8 +70,10 @@ class CategoryAdmin(admin.ModelAdmin):
 # Form with server-side validation for category / industry consistency
 # ---------------------------------------------------------------------------
 
-class CustomUserAdminForm(forms.ModelForm):
-    class Meta:
+class CustomUserAdminForm(UserChangeForm):
+    """Extends UserChangeForm so ReadOnlyPasswordHashField (and its
+    'change password' link) is inherited correctly."""
+    class Meta(UserChangeForm.Meta):
         model = User
         fields = '__all__'
 

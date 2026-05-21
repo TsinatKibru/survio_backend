@@ -64,12 +64,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'survio.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Database Configuration
+# Default to SQLite for local development, switch to PostgreSQL via env vars
+USE_POSTGRES = config('USE_POSTGRES', default=False, cast=bool)
+
+if USE_POSTGRES:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432', cast=str),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -155,3 +171,34 @@ SESSION_COOKIE_AGE = 1800
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Reset the 30-minute timer on every click/action
 SESSION_SAVE_EVERY_REQUEST = True
+
+# ── Production Security Settings (OpenVAS hardening) ─────────────────────────
+# These only activate in production (DEBUG=False). Local dev is unaffected.
+if not DEBUG:
+    # Fix: Strict-Transport-Security Header Not Set
+    SECURE_HSTS_SECONDS = 31536000          # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Fix: Cleartext Transmission of Sensitive Information via HTTP
+    # PythonAnywhere terminates TLS at the proxy — do NOT set SSL_REDIRECT=True
+    SECURE_SSL_REDIRECT = False
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Fix: Cookie No HttpOnly Flag + Cookie Without Secure Flag
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+
+    # Fix: X-Content-Type-Options Header Missing
+    SECURE_CONTENT_TYPE_NOSNIFF = True      # → X-Content-Type-Options: nosniff
+
+    # Additional hardening (handled by Django's SecurityMiddleware)
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    X_FRAME_OPTIONS = 'DENY'
+
+    # Fix: Content Security Policy — injected by survio.middleware.SecurityHeadersMiddleware
+    # (No extra package needed — see survio/middleware.py)
+    MIDDLEWARE += ['survio.middleware.SecurityHeadersMiddleware']
+# ─────────────────────────────────────────────────────────────────────────────

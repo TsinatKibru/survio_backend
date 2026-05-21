@@ -17,10 +17,10 @@ schema_view = get_schema_view(
    permission_classes=(permissions.AllowAny,),
 )
 
-from django.http import JsonResponse
+from django.shortcuts import render
 
 def home_view(request):
-    return JsonResponse({"status": "running", "message": "Survio API is alive"})
+    return render(request, 'coming_soon.html')
 
 urlpatterns = [
     path('', home_view),

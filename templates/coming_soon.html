@@ -1,0 +1,274 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FBRDC FFIMS | Food Fortification Information Management System</title>
+    <meta name="description" content="Official portal for the Food Fortification Information Management System of the Food, Beverage and Pharmaceutical Industry Development Center (FBRDC).">
+    
+    <!-- Modern Typography: Google Fonts Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Modern CSS Reset & Root Variables */
+        :root {
+            --bg-color: #080C14;
+            --card-bg: rgba(13, 20, 35, 0.45);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --text-primary: #FFFFFF;
+            --text-secondary: #94A3B8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --primary-accent: #38BDF8;
+            --primary-gradient: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+            --pulse-green: #10B981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Premium Mesh Glow Gradients */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            top: -100px;
+            left: -100px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            bottom: -100px;
+            right: -100px;
+            background: radial-gradient(circle, rgba(129, 140, 248, 0.1) 0%, transparent 70%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Glassmorphic Container Layout */
+        main {
+            width: 100%;
+            max-width: 580px;
+            padding: 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 48px 40px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Glow effects inside the card */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 25%;
+            width: 50%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
+        }
+
+        /* Logo Branding & Float Micro-Animation */
+        .logo-container {
+            margin-bottom: 32px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .logo-img {
+            max-height: 85px;
+            width: auto;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+            animation: floatLogo 6s ease-in-out infinite;
+        }
+
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Pulsing Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--pulse-green);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--pulse-green);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 10px var(--pulse-green);
+            animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.15); }
+        }
+
+        /* Typography & Naming Structure */
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            font-size: 1.05rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 36px;
+            padding: 0 10px;
+        }
+
+        /* Separator Line */
+        .divider {
+            height: 1px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 80%);
+            margin: 24px 0;
+            border: 0;
+        }
+
+        /* Administrative Access Link */
+        .btn-admin {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--primary-accent);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 12px 28px;
+            border-radius: 12px;
+            background: rgba(56, 189, 248, 0.04);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 5;
+            cursor: pointer;
+        }
+
+        .btn-admin:hover {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.1);
+        }
+
+        .btn-admin svg {
+            margin-left: 8px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-admin:hover svg {
+            transform: translateX(3px);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 500px) {
+            .glass-card {
+                padding: 36px 20px;
+                border-radius: 20px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .subtitle {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <section class="glass-card" id="main-content">
+            <!-- Pulsing Status Badge -->
+            <div class="status-badge" id="badge-status">
+                <span class="status-dot"></span>
+                System Launching Soon
+            </div>
+
+            <!-- FBRDC Branding Logo -->
+            <div class="logo-container">
+                <img src="{% static 'img/fbrdc_logo.png' %}" alt="FBRDC Logo" class="logo-img" id="fbrdc-brand-logo">
+            </div>
+
+            <!-- Primary Headings -->
+            <header>
+                <h1 id="brand-title">FBRDC FFIMS</h1>
+                <p class="subtitle" id="brand-subtitle">
+                    Food Fortification Information Management System
+                </p>
+            </header>
+
+            <hr class="divider">
+
+            <!-- Secure Admin Panel Action Link -->
+            <div>
+                <a href="/admin/" class="btn-admin" id="link-admin-portal">
+                    Secure Admin Login
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

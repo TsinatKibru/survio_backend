@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBRDC FFIMS | Food Fortification Information Management System</title>
-    <meta name="description" content="Official portal for the Food Fortification Information Management System of the Food, Beverage and Pharmaceutical Industry Development Center (FBRDC).">
+    <title>FBIRDC FFIMS | Food Fortification Information Management System</title>
+    <meta name="description" content="Official portal for the Food Fortification Information Management System of the Food and Beverage Industry Research & Development Center (FBIRDC).">
     
     <!-- Modern Typography: Google Fonts Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +23,6 @@
             --accent-glow: rgba(56, 189, 248, 0.15);
             --primary-accent: #38BDF8;
             --primary-gradient: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
-            --pulse-green: #10B981;
         }
 
         * {
@@ -82,7 +81,7 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 24px;
-            padding: 48px 40px;
+            padding: 56px 40px;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 
@@ -92,7 +91,7 @@
             overflow: hidden;
         }
 
-        /* Glow effects inside the card */
+        /* Glow line decoration */
         .glass-card::before {
             content: '';
             position: absolute;
@@ -103,54 +102,30 @@
             background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
         }
 
-        /* Logo Branding & Float Micro-Animation */
-        .logo-container {
-            margin-bottom: 32px;
-            position: relative;
-            display: inline-block;
+        /* Logo Wrapping (Matching custom login.html) */
+        .logo-wrap {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            animation: floatLogo 6s ease-in-out infinite;
         }
 
-        .logo-img {
-            max-height: 85px;
-            width: auto;
-            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
-            animation: floatLogo 6s ease-in-out infinite;
+        .logo-wrap img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
         }
 
         @keyframes floatLogo {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-        }
-
-        /* Pulsing Status Badge */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 100px;
-            padding: 6px 16px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--pulse-green);
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            margin-bottom: 24px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--pulse-green);
-            border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 0 10px var(--pulse-green);
-            animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes pulseDot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(1.15); }
+            50% { transform: translateY(-6px); }
         }
 
         /* Typography & Naming Structure */
@@ -162,7 +137,7 @@
             background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .subtitle {
@@ -220,7 +195,7 @@
         /* Responsive Breakpoints */
         @media (max-width: 500px) {
             .glass-card {
-                padding: 36px 20px;
+                padding: 40px 20px;
                 border-radius: 20px;
             }
             h1 {
@@ -236,20 +211,14 @@
 
     <main>
         <section class="glass-card" id="main-content">
-            <!-- Pulsing Status Badge -->
-            <div class="status-badge" id="badge-status">
-                <span class="status-dot"></span>
-                System Launching Soon
-            </div>
-
-            <!-- FBRDC Branding Logo -->
-            <div class="logo-container">
-                <img src="{% static 'img/fbrdc_logo.png' %}" alt="FBRDC Logo" class="logo-img" id="fbrdc-brand-logo">
+            <!-- FBIRDC Branding Logo Wrap (Matching Admin Login style) -->
+            <div class="logo-wrap" id="fbirdc-logo-container">
+                <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="FBIRDC Logo" id="fbirdc-brand-logo">
             </div>
 
             <!-- Primary Headings -->
             <header>
-                <h1 id="brand-title">FBRDC FFIMS</h1>
+                <h1 id="brand-title">FBIRDC FFIMS</h1>
                 <p class="subtitle" id="brand-subtitle">
                     Food Fortification Information Management System
                 </p>

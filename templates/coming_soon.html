@@ -2,242 +2,1050 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FBIRDC FFIMS | Food Fortification Information Management System</title>
-    <meta name="description" content="Official portal for the Food Fortification Information Management System of the Food and Beverage Industry Research & Development Center (FBIRDC).">
-    
-    <!-- Modern Typography: Google Fonts Inter & Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Modern CSS Reset & Root Variables */
-        :root {
-            --bg-color: #080C14;
-            --card-bg: rgba(13, 20, 35, 0.45);
-            --card-border: rgba(255, 255, 255, 0.07);
-            --text-primary: #FFFFFF;
-            --text-secondary: #94A3B8;
-            --accent-glow: rgba(56, 189, 248, 0.15);
-            --primary-accent: #38BDF8;
-            --primary-gradient: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FFIMS — Food Fortification Information Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  :root {
+    --primary: #1e3a8a;       /* Cobalt Blue from MIDI Logo */
+    --primary-dark: #0f172a;  /* Deep Navy */
+    --primary-light: #2563eb; /* Royal Blue */
+    --secondary: #79aec8;     /* Django Steel Blue */
+    --accent: #f59e0b;        /* Gold/Orange from MIDI Logo */
+    --accent-hover: #d97706;
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+    --border: #e2e8f0;
+    --border-bright: #cbd5e1;
+    --font-display: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow-x: hidden;
-            position: relative;
-        }
+  html { scroll-behavior: smooth; }
 
-        /* Premium Mesh Glow Gradients */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            top: -100px;
-            left: -100px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
-            z-index: 1;
-            pointer-events: none;
-        }
+  body {
+    background: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
 
-        body::after {
-            content: '';
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            bottom: -100px;
-            right: -100px;
-            background: radial-gradient(circle, rgba(129, 140, 248, 0.1) 0%, transparent 70%);
-            z-index: 1;
-            pointer-events: none;
-        }
+  /* Django-like Grid Texture background decoration */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30, 58, 138, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 58, 138, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-        /* Glassmorphic Container Layout */
-        main {
-            width: 100%;
-            max-width: 580px;
-            padding: 24px;
-            position: relative;
-            z-index: 10;
-        }
+  /* ── NAV BAR (Resembles Django Admin Header but premium branding) ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5%;
+    height: 72px;
+    background: var(--primary-dark);
+    border-bottom: 4px solid var(--accent); /* Gold Accent Line */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
 
-        .glass-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            padding: 56px 40px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
 
-        /* Glow line decoration */
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 25%;
-            width: 50%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
-        }
+  .nav-logo-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Prevent rectangular edges from leaking outside the circular mask */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
 
-        /* Logo Wrapping (Matching custom login.html) */
-        .logo-wrap {
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.95);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 32px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-            animation: floatLogo 6s ease-in-out infinite;
-        }
+  .nav-logo-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Zooms/crops to fill circular frame */
+    border-radius: 50%;
+  }
 
-        .logo-wrap img {
-            width: 90px;
-            height: 90px;
-            object-fit: contain;
-        }
+  .nav-name-container {
+    display: flex;
+    flex-direction: column;
+  }
 
-        @keyframes floatLogo {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-        }
+  .nav-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+  }
 
-        /* Typography & Naming Structure */
-        h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 14px;
-        }
+  .nav-name span { color: var(--accent); }
 
-        .subtitle {
-            font-size: 1.05rem;
-            font-weight: 400;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 36px;
-            padding: 0 10px;
-        }
+  .nav-subname {
+    font-size: 10px;
+    color: var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
 
-        /* Separator Line */
-        .divider {
-            height: 1px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 80%);
-            margin: 24px 0;
-            border: 0;
-        }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    list-style: none;
+  }
 
-        /* Administrative Access Link */
-        .btn-admin {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: var(--primary-accent);
-            font-size: 0.9rem;
-            font-weight: 500;
-            padding: 12px 28px;
-            border-radius: 12px;
-            background: rgba(56, 189, 248, 0.04);
-            border: 1px solid rgba(56, 189, 248, 0.15);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            z-index: 5;
-            cursor: pointer;
-        }
+  .nav-links a {
+    font-size: 14px;
+    color: #e2e8f0;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
 
-        .btn-admin:hover {
-            background: rgba(56, 189, 248, 0.08);
-            border-color: rgba(56, 189, 248, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.1);
-        }
+  .nav-links a:hover { color: var(--accent); }
 
-        .btn-admin svg {
-            margin-left: 8px;
-            transition: transform 0.2s ease;
-        }
+  .btn-nav {
+    padding: 8px 20px;
+    background: var(--primary-light);
+    border: 1px solid var(--primary-light);
+    border-radius: 6px;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  }
 
-        .btn-admin:hover svg {
-            transform: translateX(3px);
-        }
+  .btn-nav:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+  }
 
-        /* Responsive Breakpoints */
-        @media (max-width: 500px) {
-            .glass-card {
-                padding: 40px 20px;
-                border-radius: 20px;
-            }
-            h1 {
-                font-size: 1.8rem;
-            }
-            .subtitle {
-                font-size: 0.95rem;
-            }
-        }
-    </style>
+  /* ── HERO SECTION ── */
+  .hero {
+    position: relative;
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 5% 60px;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: -100px; right: -150px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 75%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 60px;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--primary-light);
+    margin-bottom: 16px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 20px; height: 2px;
+    background: var(--accent);
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(34px, 4vw, 52px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+    color: var(--primary-dark);
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--primary-light);
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .hero-desc {
+    font-size: 16px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 540px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: var(--accent);
+    color: var(--primary-dark);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 26px;
+    background: #ffffff;
+    color: var(--primary-dark);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 6px;
+    border: 1px solid var(--border-bright);
+    transition: background 0.2s, transform 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--bg-main); transform: translateY(-1px); }
+
+  .btn-arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+  .btn-primary:hover .btn-arrow,
+  .btn-secondary:hover .btn-arrow { transform: translateX(3px); }
+
+  /* ── DJANGO ADMIN INSPIRED VISUAL PREVIEW ── */
+  .hero-visual {
+    position: relative;
+  }
+
+  .dashboard-preview {
+    background: #ffffff;
+    border: 1px solid var(--border-bright);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(30, 58, 138, 0.05);
+  }
+
+  /* Django Admin Header Style Bar */
+  .db-topbar {
+    background: var(--primary);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .db-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+    font-family: var(--font-display);
+    letter-spacing: 0.5px;
+  }
+
+  .db-breadcrumbs {
+    font-size: 11px;
+    color: var(--secondary);
+  }
+
+  /* Django Admin Sidebar Mockup */
+  .db-container {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    height: 260px;
+    background: #f1f5f9;
+  }
+
+  .db-sidebar {
+    background: #ffffff;
+    border-right: 1px solid var(--border);
+    padding: 12px;
+  }
+
+  .db-sidebar-title {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .db-sidebar-links {
+    list-style: none;
+  }
+
+  .db-sidebar-links li {
+    font-size: 11px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .db-sidebar-links li.active {
+    background: rgba(30, 58, 138, 0.06);
+    color: var(--primary-light);
+    font-weight: 600;
+  }
+
+  /* Django Admin Main Content Mockup */
+  .db-main {
+    padding: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .db-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .db-card-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-light);
+  }
+
+  .db-card-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .db-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 10px;
+  }
+
+  .db-table th {
+    background: #f8fafc;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .db-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .db-status-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+
+  .db-status-pill.success { background: #dcfce7; color: #15803d; }
+  .db-status-pill.warning { background: #fef9c3; color: #a16207; }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    position: relative;
+    z-index: 1;
+    padding: 40px 5%;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: #ffffff;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  .stats-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+    text-align: center;
+  }
+
+  .stat-item-num {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--primary-light);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-item-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ── SECTION HEADER DESIGN ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 80px 5%;
+  }
+
+  .section-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--primary-light);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 16px; height: 2px;
+    background: var(--accent);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: var(--primary-dark);
+  }
+
+  .section-title em { font-style: normal; color: var(--primary-light); }
+
+  .section-sub {
+    font-size: 15px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin-bottom: 48px;
+  }
+
+  /* ── FEATURES GRID ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .feature-card:hover {
+    border-color: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    color: var(--primary-light);
+    margin-bottom: 16px;
+  }
+
+  .feature-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+  }
+
+  .feature-desc {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── HOW IT WORKS STEPS ── */
+  .how-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .steps-list { list-style: none; }
+
+  .step-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step-item:last-child { border-bottom: none; }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border: 2px solid var(--primary-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-light);
+  }
+
+  .step-content-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+  }
+
+  .step-content-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── COVERAGE FOOD PILLS ── */
+  .foods-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .food-pill {
+    padding: 10px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--primary-dark);
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+
+  .food-pill:hover {
+    border-color: var(--primary-light);
+    background: rgba(37, 99, 235, 0.04);
+    transform: translateY(-1px);
+  }
+
+  .food-pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* ── CALL TO ACTION BOX ── */
+  .cta-section {
+    padding: 60px 5% 100px;
+  }
+
+  .cta-box {
+    max-width: 960px;
+    margin: 0 auto;
+    background: var(--primary-dark);
+    border-bottom: 6px solid var(--accent);
+    border-radius: 12px;
+    padding: 56px 40px;
+    text-align: center;
+    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.15);
+    color: #ffffff;
+  }
+
+  .cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #ffffff;
+  }
+
+  .cta-title em { font-style: normal; color: var(--accent); }
+
+  .cta-sub {
+    font-size: 15px;
+    color: #94a3b8;
+    margin-bottom: 32px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border-bright);
+    padding: 48px 5% 24px;
+    background: #ffffff;
+  }
+
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr;
+    gap: 40px;
+  }
+
+  .footer-brand-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 12px;
+    line-height: 1.6;
+    max-width: 440px;
+  }
+
+  .footer-col-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--primary-dark);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 10px; }
+
+  .footer-links a {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--primary-light); }
+
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 36px auto 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .gov-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(30, 58, 138, 0.05);
+    border: 1px solid rgba(30, 58, 138, 0.1);
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* ── RESPONSIVE DESIGN ── */
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .hero-visual { max-width: 500px; margin: 0 auto; }
+    .features-grid { grid-template-columns: 1fr; }
+    .how-grid { grid-template-columns: 1fr; gap: 30px; }
+    .stats-inner { grid-template-columns: repeat(2, 1fr); }
+    .footer-inner { grid-template-columns: 1fr; }
+    nav .nav-links { display: none; }
+    .cta-box { padding: 40px 20px; }
+  }
+</style>
 </head>
 <body>
 
-    <main>
-        <section class="glass-card" id="main-content">
-            <!-- FBIRDC Branding Logo Wrap (Matching Admin Login style) -->
-            <div class="logo-wrap" id="fbirdc-logo-container">
-                <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="FBIRDC Logo" id="fbirdc-brand-logo">
+<!-- ── NAVBAR ── -->
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="nav-logo-wrap">
+      <!-- MIDI Circular Logo (photo_2026-03-18_09-10-31.jpg) -->
+      <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="MIDI Logo">
+    </div>
+    <div class="nav-name-container">
+      <span class="nav-name">FF<span>IMS</span></span>
+      <span class="nav-subname">FBIRDC Ethiopia</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it Works</a></li>
+    <li><a href="#coverage">Coverage</a></li>
+    <li><a href="/admin/" class="btn-nav">Admin Login →</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO SECTION ── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-eyebrow">Federal Democratic Republic of Ethiopia</div>
+      <h1>Food Fortification<br><em>Intelligence</em><br>Platform</h1>
+      <p class="hero-desc">
+        The official regulatory dashboard of the Food and Beverage Industry Research & Development Center (FBIRDC). FFIMS enables real-time compliance monitoring, reporting, and strategic analytics for mandated fortification.
+      </p>
+      <div class="hero-actions">
+        <a href="/admin/" class="btn-primary">Portal Login <span class="btn-arrow">→</span></a>
+        <a href="#how" class="btn-secondary">Technical Guide <span class="btn-arrow">↓</span></a>
+      </div>
+    </div>
+
+    <!-- Premium Django Admin Style Preview Visual -->
+    <div class="hero-visual">
+      <div class="dashboard-preview">
+        <div class="db-topbar">
+          <div class="db-title">FFIMS Site Administration</div>
+          <div class="db-breadcrumbs">Home &rsaquo; Industry &rsaquo; Compliance</div>
+        </div>
+        <div class="db-container">
+          <div class="db-sidebar">
+            <div class="db-sidebar-title">Compliance System</div>
+            <ul class="db-sidebar-links">
+              <li class="active">Submissions</li>
+              <li>Reporting Periods</li>
+              <li>Category Settings</li>
+              <li>Organizations</li>
+            </ul>
+          </div>
+          <div class="db-main">
+            <div class="db-grid">
+              <div class="db-card">
+                <div class="db-card-num">5</div>
+                <div class="db-card-label">Active Checklists</div>
+              </div>
+              <div class="db-card">
+                <div class="db-card-num">11</div>
+                <div class="db-card-label">Verified Industries</div>
+              </div>
+              <div class="db-card">
+                <div class="db-card-num">100%</div>
+                <div class="db-card-label">Digital Audit</div>
+              </div>
             </div>
+            <table class="db-table">
+              <thead>
+                <tr>
+                  <th>Industry</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Flour Mill Alpha</td>
+                  <td>Wheat Flour</td>
+                  <td><span class="db-status-pill success">Compliant</span></td>
+                </tr>
+                <tr>
+                  <td>Salt Refinery Beta</td>
+                  <td>Table Salt</td>
+                  <td><span class="db-status-pill success">Compliant</span></td>
+                </tr>
+                <tr>
+                  <td>Oil Mill Gamma</td>
+                  <td>Edible Oil</td>
+                  <td><span class="db-status-pill warning">Pending</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-            <!-- Primary Headings -->
-            <header>
-                <h1 id="brand-title">FBIRDC FFIMS</h1>
-                <p class="subtitle" id="brand-subtitle">
-                    Food Fortification Information Management System
-                </p>
-            </header>
+<!-- ── STATS STRIP ── -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div>
+      <div class="stat-item-num">5</div>
+      <div class="stat-item-label">Compliance Checklists</div>
+    </div>
+    <div>
+      <div class="stat-item-num">100%</div>
+      <div class="stat-item-label">Government Domain Security</div>
+    </div>
+    <div>
+      <div class="stat-item-num">11</div>
+      <div class="stat-item-label">Onboarded Producers</div>
+    </div>
+    <div>
+      <div class="stat-item-num">Real‑time</div>
+      <div class="stat-item-label">Compliance Aggregation</div>
+    </div>
+  </div>
+</div>
 
-            <hr class="divider">
+<!-- ── FEATURES SECTION ── -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">National Food Fortification<br><em>Monitoring Infrastructure</em></h2>
+    <p class="section-sub">A comprehensive, end-to-end framework built to enforce quality standards and trace fortification premix distribution nationwide.</p>
 
-            <!-- Secure Admin Panel Action Link -->
-            <div>
-                <a href="/admin/" class="btn-admin" id="link-admin-portal">
-                    Secure Admin Login
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
-                </a>
-            </div>
-        </section>
-    </main>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <div class="feature-title">Dynamic Checklists</div>
+        <p class="feature-desc">Interactive, multi-section compliance forms tailored per industry type. Automatically populates mandatory fields for vitamins and minerals.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Mobile Data Collection</div>
+        <p class="feature-desc">Operator-friendly mobile application allowing field staff to submit production and premix usage indicators directly from factory floors.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Strategic Data Explorer</div>
+        <p class="feature-desc">Custom analytics tools providing deep insights, performance scoring, and comparative trends across all registered production organizations.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <div class="feature-title">Automatic Reminders</div>
+        <p class="feature-desc">Scheduled notification system warning managers about approaching reporting deadlines and overdue monthly submissions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-title">Authorized Audit Trail</div>
+        <p class="feature-desc">Built-in historical record tracking that preserves all submission changes, ensuring full transparency and compliance integrity.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Secure Gov Network</div>
+        <p class="feature-desc">Hosted on the official Ethiopian government network. Encrypted via HTTPS, utilizing robust role-based access control systems.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how" style="background: rgba(30, 58, 138, 0.015);">
+  <div class="section-inner">
+    <div class="section-label">How it Works</div>
+    <h2 class="section-title">Securing compliance from<br><em>mills to market</em></h2>
+
+    <div class="how-grid">
+      <ul class="steps-list">
+        <li class="step-item">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-content-title">Onboarding & Configuration</div>
+            <p class="step-content-desc">Industries are registered under their specific food categories (e.g. Salt, Wheat, CSB+). Account profiles are linked directly to verification managers.</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-content-title">Monthly Assignment</div>
+            <p class="step-content-desc">At the start of every reporting period, correct forms are generated automatically according to industry specialization.</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-content-title">Data Transmission</div>
+            <p class="step-content-desc">Technical staff capture fortification parameters, premix levels, and laboratory values using the web portal or mobile application.</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-content-title">Centralized Validation</div>
+            <p class="step-content-desc">FBIRDC administrators review submissions in the control dashboard, verify compliance percentages, and download structured reports.</p>
+          </div>
+        </li>
+      </ul>
+
+      <!-- visual detail showing the official logo and seal -->
+      <div style="text-align: center;">
+        <div style="background: #ffffff; border: 1px solid var(--border-bright); border-radius: 8px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); max-width: 380px; margin: 0 auto;">
+          <div style="width: 100px; height: 100px; margin: 0 auto 20px; border-radius: 50%; background: #ffffff; display:flex; align-items:center; justify-content:center; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="MIDI Emblem" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+          </div>
+          <h3 style="font-size: 15px; color: var(--primary-dark); font-weight: 700; margin-bottom: 8px; font-family: var(--font-display);">Food Fortification Quality Seal</h3>
+          <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">Official system verifying mandatory fortification standards across Ethiopian industries under Federal Directive regulations.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COVERAGE SECTION ── -->
+<section id="coverage">
+  <div class="section-inner">
+    <div class="section-label">Coverage</div>
+    <h2 class="section-title">Monitored Fortified<br><em>Food Categories</em></h2>
+    <p class="section-sub">We verify compliance across all five national regulatory food fortification checklists mandated by directives.</p>
+
+    <div class="foods-row">
+      <div class="food-pill"><div class="food-pill-dot"></div> Maize Flour</div>
+      <div class="food-pill"><div class="food-pill-dot"></div> Wheat Flour</div>
+      <div class="food-pill"><div class="food-pill-dot"></div> Edible Oil</div>
+      <div class="food-pill"><div class="food-pill-dot"></div> Table Salt (DFS-IoFA)</div>
+      <div class="food-pill"><div class="food-pill-dot"></div> CSB+ Flour</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CALL TO ACTION ── -->
+<div class="cta-section">
+  <div class="cta-box">
+    <div class="section-label" style="justify-content: center; color: var(--accent);">Administrative Portal</div>
+    <h2 class="cta-title">Access the <em>FFIMS Control Panel</em></h2>
+    <p class="cta-sub">Registered operators and FBIRDC supervisors can log in to view forms, submit reporting details, and access analytics.</p>
+    <div class="cta-actions">
+      <a href="/admin/" class="btn-primary">Sign In to Dashboard <span class="btn-arrow">→</span></a>
+      <a href="mailto:info@fbirdc.gov.et" class="btn-secondary" style="background: transparent; color: #ffffff; border-color: rgba(255,255,255,0.3);">Technical Assistance <span class="btn-arrow">→</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <div class="nav-logo-wrap" style="width:36px; height:36px; box-shadow:none; border: 1px solid var(--border);">
+          <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="MIDI Logo">
+        </div>
+        <span style="font-family:var(--font-display); font-weight:800; font-size:16px; color:var(--primary-dark);">FF<span style="color:var(--primary-light);">IMS</span></span>
+      </div>
+      <p class="footer-brand-desc">Food Fortification Information Management System (FFIMS) — Ethiopia's official platform for monitoring, reporting, and analyzing mandatory food fortification compliance. Managed by the Food and Beverage Industry Research & Development Center (FBIRDC).</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Platform</div>
+      <ul class="footer-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How it Works</a></li>
+        <li><a href="#coverage">Fortified Foods</a></li>
+        <li><a href="/admin/">Control Panel Login</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Contact & Support</div>
+      <ul class="footer-links">
+        <li><a href="mailto:info@fbirdc.gov.et">info@fbirdc.gov.et</a></li>
+        <li><a href="#">Technical Support</a></li>
+        <li><a href="https://effims.gov.et/admin/">Admin Access</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 FBIRDC · Food and Beverage Industry Research & Development Center · FDRE</span>
+    <span class="gov-badge">🇪🇹 effims.gov.et</span>
+  </div>
+  <div style="margin-top: 12px; text-align: center; font-size: 11px; color: var(--text-dim);">
+    Designed and developed by <strong>Melfan Tech</strong>
+  </div>
+</footer>
 
 </body>
 </html>

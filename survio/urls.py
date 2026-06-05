@@ -18,9 +18,11 @@ schema_view = get_schema_view(
 )
 
 from django.shortcuts import render
+from ads.models import NewsItem
 
 def home_view(request):
-    return render(request, 'coming_soon.html')
+    news_items = NewsItem.objects.filter(is_published=True).order_by('-published_date', '-created_at')[:3]
+    return render(request, 'coming_soon.html', {'news_items': news_items})
 
 urlpatterns = [
     path('', home_view),

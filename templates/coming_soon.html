@@ -746,8 +746,358 @@
     font-weight: 600;
   }
 
+  /* ── NEWS SECTION ── */
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
+    margin-top: 12px;
+  }
+
+  .news-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px rgba(15, 23, 42, 0.015);
+  }
+
+  .news-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary-light);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  .news-card-img {
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  }
+
+  .news-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+
+  .news-card:hover .news-card-img img {
+    transform: scale(1.04);
+  }
+
+  /* Fallback gradient variants when no image */
+  .news-card-img.tag-standard  { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); }
+  .news-card-img.tag-announcement { background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%); }
+  .news-card-img.tag-update    { background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); }
+
+  .news-card-img-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 44px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .news-card-content {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .news-tag {
+    align-self: flex-start;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .news-tag.standard { background: #e0f2fe; color: #0369a1; }
+  .news-tag.announcement { background: #fee2e2; color: #b91c1c; }
+  .news-tag.update { background: #fef3c7; color: #d97706; }
+
+  .news-card-date {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .news-card-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    line-height: 1.35;
+    margin-bottom: 10px;
+  }
+
+  .news-card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin-bottom: 16px;
+    flex-grow: 1;
+  }
+
+  .news-link {
+    font-size: 13px;
+    color: var(--primary-light);
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+
+  .news-link:hover {
+    color: var(--primary);
+  }
+
+  /* ── DOWNLOAD BANNER ── */
+  .download-banner {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #0f172a 100%);
+    border-bottom: 6px solid var(--accent);
+    border-radius: 16px;
+    padding: 60px 48px;
+    color: #ffffff;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 40px;
+    align-items: center;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  }
+
+  .download-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .download-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .download-title {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3.2vw, 36px);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .download-desc {
+    font-size: 14.5px;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 580px;
+  }
+
+  .download-bullets {
+    list-style: none;
+    margin-bottom: 28px;
+  }
+
+  .download-bullets li {
+    position: relative;
+    padding-left: 24px;
+    font-size: 13.5px;
+    color: #cbd5e1;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
+  .download-bullets li::before {
+    content: '✓';
+    color: var(--accent);
+    font-weight: 800;
+    position: absolute;
+    left: 0;
+    top: 2px;
+  }
+
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 28px;
+    background: var(--accent);
+    color: var(--primary-dark);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 8px;
+    align-self: flex-start;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  }
+
+  .download-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+  }
+
+  .download-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Mockup Smartphone design with pure CSS */
+  .phone-mockup {
+    width: 200px;
+    height: 400px;
+    border: 8px solid #334155;
+    border-radius: 28px;
+    background: #0f172a;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Notch */
+  .phone-mockup::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 14px;
+    background: #334155;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    z-index: 10;
+  }
+
+  /* Home indicator */
+  .phone-mockup::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 4px;
+    background: #334155;
+    border-radius: 2px;
+    z-index: 10;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    padding: 24px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+  }
+
+  .phone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .phone-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+  }
+
+  .phone-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .phone-title {
+    font-size: 8px;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .phone-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .phone-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px;
+  }
+
+  .phone-card-title {
+    font-size: 7px;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+
+  .phone-card-val {
+    font-size: 10px;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .phone-card-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .phone-card-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .phone-footer-btn {
+    height: 20px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    font-weight: 800;
+    color: var(--primary-dark);
+  }
+
   /* ── RESPONSIVE DESIGN ── */
   @media (max-width: 900px) {
+    .download-banner { grid-template-columns: 1fr; padding: 40px 24px; gap: 30px; }
+    .download-visual { display: none; }
     .hero-inner { grid-template-columns: 1fr; gap: 40px; }
     .hero-visual { max-width: 500px; margin: 0 auto; }
     .features-grid { grid-template-columns: 1fr; }
@@ -775,8 +1125,9 @@
   </a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
+    <li><a href="#news">News</a></li>
     <li><a href="#how">How it Works</a></li>
-    <li><a href="#coverage">Coverage</a></li>
+    <li><a href="#download">Mobile App</a></li>
     <li><a href="/admin/" class="btn-nav">Admin Login →</a></li>
   </ul>
 </nav>
@@ -926,6 +1277,42 @@
   </div>
 </section>
 
+<!-- ── NEWS SECTION ── -->
+<section id="news" style="background: #ffffff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="section-inner">
+    <div class="section-label">News & Updates</div>
+    <h2 class="section-title">Latest Fortification<br><em>Announcements & Updates</em></h2>
+    <p class="section-sub">Stay informed with the latest updates regarding food fortification standards, capacity building workshops, and regulatory policy directives in Ethiopia.</p>
+
+    <div class="news-grid">
+      {% for item in news_items %}
+      <div class="news-card">
+        <div class="news-card-img tag-{{ item.tag }}">
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.title }}">
+          {% else %}
+            <div class="news-card-img-fallback">
+              {% if item.tag == 'standard' %}📋{% elif item.tag == 'announcement' %}🎓{% else %}📊{% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="news-card-content">
+          <span class="news-tag {{ item.tag }}">{{ item.get_tag_display }}</span>
+          <span class="news-card-date">{{ item.published_date|date:"F d, Y" }}</span>
+          <h3 class="news-card-title">{{ item.title }}</h3>
+          <p class="news-card-desc">{{ item.description }}</p>
+          {% if item.link_url %}
+          <a href="{{ item.link_url }}" class="news-link" target="_blank" rel="noopener noreferrer">{{ item.link_text }} →</a>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px 0;">No news items published yet. Check back soon.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 <!-- ── HOW IT WORKS ── -->
 <section id="how" style="background: rgba(30, 58, 138, 0.015);">
   <div class="section-inner">
@@ -995,6 +1382,69 @@
   </div>
 </section>
 
+<!-- ── DOWNLOAD BANNER SECTION ── -->
+<section id="download" style="padding: 40px 5%;">
+  <div class="section-inner">
+    <div class="download-banner">
+      <div class="download-content">
+        <span class="download-eyebrow">On-Site Data Collection</span>
+        <h2 class="download-title">FFIMS Mobile Application</h2>
+        <p class="download-desc">
+          Capture and transmit compliance metrics directly from the factory floor. The FFIMS mobile app is optimized for plant operators, providing reliable, secure field-level input workflows.
+        </p>
+        <ul class="download-bullets">
+          <li><strong>Offline submissions:</strong> Log inspection checklists offline; syncs automatically when reconnected.</li>
+          <li><strong>Built-in camera:</strong> Capture and attach direct laboratory scale photos or quality seal verification images.</li>
+          <li><strong>Real-time alerts:</strong> Never miss a monthly window with direct operational reminders.</li>
+        </ul>
+        <a href="/media/app/ffims_latest.apk" class="download-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download Android App (APK)
+        </a>
+      </div>
+      <div class="download-visual">
+        <div class="phone-mockup">
+          <div class="phone-screen">
+            <div class="phone-header">
+              <div class="phone-logo">
+                <img src="{% static 'img/photo_2026-03-18_09-10-31.jpg' %}" alt="Logo">
+              </div>
+              <span class="phone-title">FFIMS MOBILE</span>
+              <span style="font-size:7px; color:#10b981;">● Online</span>
+            </div>
+            <div class="phone-body">
+              <div class="phone-card">
+                <div class="phone-card-title">WHEAT FLOUR CHECKLIST</div>
+                <div class="phone-card-val">Operator: Mill Alpha</div>
+                <div class="phone-card-bar">
+                  <div class="phone-card-fill" style="width: 80%;"></div>
+                </div>
+              </div>
+              <div class="phone-card">
+                <div class="phone-card-title">PREMIX INDICATORS</div>
+                <div class="phone-card-val">Feeder Rate: 85 g/min</div>
+                <div class="phone-card-bar">
+                  <div class="phone-card-fill" style="width: 65%;"></div>
+                </div>
+              </div>
+              <div class="phone-card">
+                <div class="phone-card-title">IRON LEVEL (RE-TEST)</div>
+                <div class="phone-card-val">Result: 42.1 ppm</div>
+                <div class="phone-card-bar">
+                  <div class="phone-card-fill" style="width: 90%;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="phone-footer-btn">
+              SUBMIT AUDIT REPORT
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── CALL TO ACTION ── -->
 <div class="cta-section">
   <div class="cta-box">
@@ -1003,7 +1453,7 @@
     <p class="cta-sub">Registered operators and FBIRDC supervisors can log in to view forms, submit reporting details, and access analytics.</p>
     <div class="cta-actions">
       <a href="/admin/" class="btn-primary">Sign In to Dashboard <span class="btn-arrow">→</span></a>
-      <a href="mailto:info@fbirdc.gov.et" class="btn-secondary" style="background: transparent; color: #ffffff; border-color: rgba(255,255,255,0.3);">Technical Assistance <span class="btn-arrow">→</span></a>
+      <a href="/app/" class="btn-secondary" style="background: transparent; color: #ffffff; border-color: rgba(255,255,255,0.3);">Go to Data Collection <span class="btn-arrow">→</span></a>
     </div>
   </div>
 </div>
@@ -1024,8 +1474,9 @@
       <div class="footer-col-title">Platform</div>
       <ul class="footer-links">
         <li><a href="#features">Features</a></li>
+        <li><a href="#news">News & Updates</a></li>
         <li><a href="#how">How it Works</a></li>
-        <li><a href="#coverage">Fortified Foods</a></li>
+        <li><a href="#download">Mobile App</a></li>
         <li><a href="/admin/">Control Panel Login</a></li>
       </ul>
     </div>

@@ -1,16 +1,23 @@
+import random
+from datetime import timedelta
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from .models import Industry, Category
+from .models import Industry, Category, PasswordResetOTP
 from .serializers import (
     RegisterSerializer, UserProfileSerializer,
     IndustrySerializer, CategorySerializer, AdminUserSerializer,
-    CustomTokenObtainPairSerializer, ChangePasswordSerializer
+    CustomTokenObtainPairSerializer, ChangePasswordSerializer,
+    ResetPasswordRequestSerializer, ResetPasswordConfirmSerializer
 )
 from .permissions import IsSuperAdmin, IsAdminOrAbove
+
 
 User = get_user_model()
 
@@ -107,3 +114,89 @@ def logout_view(request):
         return Response({'detail': 'Logged out successfully.'})
     except Exception:
         return Response({'detail': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RequestPasswordResetView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data['email']
+        try:
+            user = User.objects.get(email=email)
+            # Generate a 6-digit OTP
+            otp = f"{random.randint(100000, 999999)}"
+            # Delete old unused OTPs for this user to keep it clean
+            PasswordResetOTP.objects.filter(user=user, is_used=False).delete()
+            # Save new OTP
+            PasswordResetOTP.objects.create(user=user, otp=otp)
+            
+            # Send Email
+            subject = "FFIMS Password Reset Verification Code"
+            message = (
+                f"Hello {user.username},\n\n"
+                f"You requested a password reset for your FFIMS account.\n"
+                f"Your 6-digit verification code (OTP) is: {otp}\n\n"
+                f"This code will expire in 10 minutes.\n\n"
+                f"If you did not request this, please ignore this email."
+            )
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL or 'noreply@survio.com',
+                [email],
+                fail_silently=False,
+            )
+        except User.DoesNotExist:
+            # Silently succeed to prevent user enumeration
+            pass
+        except Exception as e:
+            # Log mail sending or other errors but don't crash
+            print(f"Error sending password reset email: {e}")
+
+        return Response(
+            {'detail': 'If this email is registered, a password reset code has been sent.'},
+            status=status.HTTP_200_OK
+        )
+
+
+class ResetPasswordConfirmView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data['email']
+        otp = serializer.validated_data['otp']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            user = User.objects.get(email=email)
+            # Find the latest unused OTP
+            otp_obj = PasswordResetOTP.objects.filter(user=user, is_used=False).first()
+            
+            if not otp_obj or otp_obj.otp != otp:
+                return Response({'otp': ['Invalid verification code.']}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check expiration (10 minutes)
+            if timezone.now() - otp_obj.created_at > timedelta(minutes=10):
+                return Response({'otp': ['Verification code has expired.']}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Valid OTP, update password
+            user.set_password(new_password)
+            user.save()
+
+            # Mark OTP as used
+            otp_obj.is_used = True
+            otp_obj.save()
+
+            return Response({'detail': 'Password reset successfully.'}, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({'email': ['No user found with this email.']}, status=status.HTTP_400_BAD_REQUEST)
+

@@ -6,11 +6,12 @@ from django.contrib.auth.models import Permission
 from django.http import JsonResponse
 from django.urls import path
 
-from .models import User, Industry, Category, Role
+from .models import User, Industry, Category, Role, PasswordResetOTP
 from survio.admin import survio_admin_site
 
 # Only show permissions from these app labels in the Role form
 RELEVANT_APP_LABELS = {'accounts', 'forms_builder', 'submissions', 'notifications', 'ads'}
+
 
 
 class RoleAdminForm(forms.ModelForm):
@@ -173,3 +174,12 @@ class CustomUserAdmin(UserAdmin):
 
 
 survio_admin_site.register(User, CustomUserAdmin)
+
+
+@admin.register(PasswordResetOTP, site=survio_admin_site)
+class PasswordResetOTPAdmin(admin.ModelAdmin):
+    list_display = ('user', 'otp', 'created_at', 'is_used')
+    list_filter = ('is_used', 'created_at')
+    search_fields = ('user__username', 'user__email', 'otp')
+    readonly_fields = ('user', 'otp', 'created_at', 'is_used')
+

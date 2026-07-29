@@ -363,7 +363,7 @@ class SurvioAdminSite(admin.AdminSite):
         context = {
             **self.each_context(request),
             'mode': mode,
-            'chart_data_json': _json.dumps(chart_data),
+            'chart_data': chart_data,
             'delta_rows': delta_rows,
             'benchmark_rows': benchmark_rows,
             'error': error,
@@ -946,8 +946,8 @@ class SurvioAdminSite(admin.AdminSite):
 
         # ── Submissions by Category (bar chart) ─────────────────────────────────
         category_stats = period_qs.values('food_category').annotate(count=Count('id'))
-        extra_context['category_labels'] = json.dumps([s['food_category'] or 'Unknown' for s in category_stats])
-        extra_context['category_data']   = json.dumps([s['count'] for s in category_stats])
+        extra_context['category_labels'] = [s['food_category'] or 'Unknown' for s in category_stats]
+        extra_context['category_data']   = [s['count'] for s in category_stats]
 
         # ── Compliance Over Time (6-month multi-line chart) ─────────────────────
         months  = []
@@ -963,7 +963,7 @@ class SurvioAdminSite(admin.AdminSite):
             month_dates.append((y, m))
             months.append(f"{month_abbr[m]} {y}")
 
-        extra_context['line_labels'] = json.dumps(months)
+        extra_context['line_labels'] = months
 
         line_datasets = []
         color_map = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#fd7e14']
@@ -987,7 +987,7 @@ class SurvioAdminSite(admin.AdminSite):
                 ).count()
                 required = required_periods * inds_in_cat
                 submitted = submissions_qs.filter(
-                    food_category=cat.name,
+                    Q(food_category=cat.name) | Q(food_category=cat.code),
                     status='submitted',
                     created_at__date__lte=month_end,
                 ).count()
@@ -995,12 +995,12 @@ class SurvioAdminSite(admin.AdminSite):
                 data.append(rate)
 
             line_datasets.append({
-                'label': cat.name,
+                'label': cat.name or cat.code or 'Unnamed',
                 'data': data,
                 'color': color_map[idx % len(color_map)],
             })
 
-        extra_context['line_datasets'] = json.dumps(line_datasets)
+        extra_context['line_datasets'] = line_datasets
 
         # ── Heatmap (Category Stats, always uses all-time data for heatmap) ─────
         heatmap_data = []

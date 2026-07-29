@@ -48,11 +48,12 @@
   {% endif %}
 </div>
 
+{{ chart_data|json_script:"chart-data-json" }}
 <script>
 (function() {
   var ctx = document.getElementById('comparisonChart');
   if (!ctx) return;
-  var raw = {{ chart_data_json|safe }};
+  var raw = JSON.parse(document.getElementById('chart-data-json').textContent);
   if (window._cmpChart) window._cmpChart.destroy();
   window._cmpChart = new Chart(ctx, {
     type: 'bar',
@@ -109,7 +110,7 @@
 (function() {
   var ctx = document.getElementById('benchmarkChart');
   if (!ctx) return;
-  var raw = {{ chart_data_json|safe }};
+  var raw = JSON.parse(document.getElementById('chart-data-json').textContent);
   if (window._benchChart) window._benchChart.destroy();
   window._benchChart = new Chart(ctx, {
     type: 'bar',

@@ -182,19 +182,11 @@
     <div style="font-size: 12px; opacity: 0.55">Last sync: {% now "H:i" %}</div>
   </div>
 
-  <!-- Data defined as JSON script tags to avoid template corruption -->
-  <script id="category-labels-data" type="application/json">
-    {{ category_labels|safe }}
-  </script>
-  <script id="category-data-data" type="application/json">
-    {{ category_data|safe }}
-  </script>
-  <script id="line-labels-data" type="application/json">
-    {{ line_labels|safe }}
-  </script>
-  <script id="line-datasets-data" type="application/json">
-    {{ line_datasets|safe }}
-  </script>
+  <!-- Data defined safely via Django json_script -->
+  {{ category_labels|json_script:"category-labels-data" }}
+  {{ category_data|json_script:"category-data-data" }}
+  {{ line_labels|json_script:"line-labels-data" }}
+  {{ line_datasets|json_script:"line-datasets-data" }}
 
   <div class="module filter-bar">
     <form method="get" style="display: flex; align-items: center; gap: 12px">

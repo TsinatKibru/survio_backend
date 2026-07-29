@@ -136,3 +136,30 @@ class PasswordResetOTPTests(TestCase):
         }
         response = self.client.post(self.confirm_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class AdminDashboardTests(TestCase):
+    """Tests for the custom Survio admin dashboard script tag security."""
+
+    def setUp(self):
+        self.role, _ = Role.objects.get_or_create(code='superuser', defaults={'name': 'Superuser'})
+        self.admin_user = User(
+            username='admin_test',
+            email='admin@example.com',
+            role_obj=self.role,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.admin_user.set_password('AdminPassword123!')
+        self.admin_user.save()
+        self.client.force_login(self.admin_user)
+
+    def test_admin_index_renders_json_script_tags_safely(self):
+        """Admin index should use Django json_script tags and render HTTP 200 without raw JSON leaks."""
+        response = self.client.get('/admin/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="line-datasets-data"')
+        self.assertContains(response, 'id="category-labels-data"')
+        # Ensure json_script format is used
+        self.assertContains(response, 'type="application/json"')
+

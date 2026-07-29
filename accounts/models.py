@@ -1,10 +1,17 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.text import slugify
+from django.core.exceptions import ValidationError
+from django.utils.html import strip_tags
+
+
+def validate_no_html(value):
+    if value and ('<' in str(value) or '>' in str(value)):
+        raise ValidationError("HTML or script tags are not allowed in this field.")
 
 
 class Industry(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, validators=[validate_no_html])
     code = models.SlugField(unique=True)
     category = models.ForeignKey('Category', on_delete=models.CASCADE, related_name='industries', null=True, blank=True)
     is_active = models.BooleanField(default=True)
@@ -13,7 +20,14 @@ class Industry(models.Model):
         verbose_name_plural = 'Industries'
         ordering = ['name']
 
+    def clean(self):
+        super().clean()
+        if self.name:
+            self.name = strip_tags(self.name).strip()
+
     def save(self, *args, **kwargs):
+        if self.name:
+            self.name = strip_tags(self.name).strip()
         if not self.code:
             self.code = slugify(self.name).replace('-', '_')
         super().save(*args, **kwargs)
@@ -23,7 +37,7 @@ class Industry(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, validators=[validate_no_html])
     code = models.SlugField(unique=True)
     is_active = models.BooleanField(default=True)
 
@@ -31,7 +45,14 @@ class Category(models.Model):
         verbose_name_plural = 'Categories'
         ordering = ['name']
 
+    def clean(self):
+        super().clean()
+        if self.name:
+            self.name = strip_tags(self.name).strip()
+
     def save(self, *args, **kwargs):
+        if self.name:
+            self.name = strip_tags(self.name).strip()
         if not self.code:
             self.code = slugify(self.name).replace('-', '_')
         super().save(*args, **kwargs)
@@ -41,13 +62,20 @@ class Category(models.Model):
 
 
 class Role(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, validators=[validate_no_html])
     code = models.CharField(max_length=50, unique=True)
     permissions = models.ManyToManyField('auth.Permission', blank=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def clean(self):
+        super().clean()
+        if self.name:
+            self.name = strip_tags(self.name).strip()
+
     def save(self, *args, **kwargs):
+        if self.name:
+            self.name = strip_tags(self.name).strip()
         if not self.code:
             from django.utils.text import slugify
             self.code = slugify(self.name).replace('-', '_')

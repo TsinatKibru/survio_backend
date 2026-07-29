@@ -163,3 +163,11 @@ class AdminDashboardTests(TestCase):
         # Ensure json_script format is used
         self.assertContains(response, 'type="application/json"')
 
+    def test_category_name_html_sanitization(self):
+        """Saving a category with script tags strips HTML tags automatically."""
+        from accounts.models import Category
+        cat = Category(name='<script>alert("xss")</script>')
+        cat.save()
+        self.assertNotIn('<script>', cat.name)
+        self.assertEqual(cat.name, 'alert("xss")')
+

@@ -28,11 +28,10 @@ class SecurityHeadersMiddleware:
 
         # ── Content-Security-Policy ───────────────────────────────────────────
         # Hardened CSP header compliant with security audit requirements.
-        # Uses per-request Nonce ('nonce-...') + explicit Django admin script hash.
-        # 'unsafe-inline' & 'unsafe-eval' remain 100% ELIMINATED.
+        # Uses per-request Nonce ('nonce-...') and eliminates 'unsafe-inline' & 'unsafe-eval'.
         csp_directives = "; ".join([
             "default-src 'self'",
-            f"script-src 'self' 'nonce-{nonce}' 'sha256-gjv3F75CxQUdM29qDXiUFS12Ja10RYwEgLfmV1Y24cY=' https://cdn.jsdelivr.net https://unpkg.com",
+            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://unpkg.com",
             "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
             "font-src 'self' fonts.gstatic.com data:",
             "img-src 'self' data: alexpsycht.pythonanywhere.com",

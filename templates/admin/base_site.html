@@ -8,7 +8,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<script>
+<script nonce="{{ csp_nonce }}">
   // Ensure the desktop Django sidebar is closed/pulled-in by default
   if (!localStorage.getItem('django.admin.navSidebarIsOpen')) {
       localStorage.setItem('django.admin.navSidebarIsOpen', 'false');
@@ -60,7 +60,7 @@
     align-items: center;
   }
 </style>
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
   // Hide the Django 5.x password hash paragraph robustly
   var pwField = document.querySelector('.field-password');

@@ -221,7 +221,7 @@
 
 
 <script src="https://unpkg.com/htmx.org@1.9.6/dist/htmx.min.js"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
   function switchMode(mode) {
     document.getElementById('filter-period').style.display    = mode === 'period'    ? '' : 'none';
     document.getElementById('filter-benchmark').style.display = mode === 'benchmark' ? '' : 'none';

@@ -49,7 +49,7 @@
 </div>
 
 {{ chart_data|json_script:"chart-data-json" }}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   var ctx = document.getElementById('comparisonChart');
   if (!ctx) return;
@@ -106,7 +106,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   var ctx = document.getElementById('benchmarkChart');
   if (!ctx) return;

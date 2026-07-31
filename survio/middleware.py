@@ -7,23 +7,31 @@ when DEBUG=False).
 """
 
 
+import secrets
+
+
 class SecurityHeadersMiddleware:
     """
     Adds Content-Security-Policy and Permissions-Policy headers to every
-    response. Fixes the OpenVAS finding: "CSP Header Not Set".
+    response. Generates a per-request cryptographic CSP nonce to eliminate
+    'unsafe-inline' and 'unsafe-eval'.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        nonce = secrets.token_urlsafe(16)
+        request.csp_nonce = nonce
+
         response = self.get_response(request)
 
         # ── Content-Security-Policy ───────────────────────────────────────────
-        # 'unsafe-inline' is required for Django admin's inline scripts/styles.
+        # Hardened CSP header compliant with security audit requirements.
+        # Uses per-request Nonce ('nonce-...') and eliminates 'unsafe-inline' & 'unsafe-eval'.
         csp_directives = "; ".join([
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",   # admin needs eval for date widgets
+            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
             "font-src 'self' fonts.gstatic.com data:",
             "img-src 'self' data: alexpsycht.pythonanywhere.com",

@@ -315,7 +315,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
   document.addEventListener("DOMContentLoaded", () => {
     const getJson = (id) => JSON.parse(document.getElementById(id).textContent);
 

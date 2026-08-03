@@ -221,3 +221,43 @@ class LoginRateLimitTests(TestCase):
         res_after = self.client.post(login_url, wrong_payload)
         self.assertNotEqual(res_after.status_code, 429)
 
+
+from rest_framework.test import APITestCase
+
+
+class TokenRevocationOnLogoutTests(APITestCase):
+    """Tests for server-side access and refresh token revocation upon logout."""
+
+    def setUp(self):
+        self.role, _ = Role.objects.get_or_create(code='companyuser', defaults={'name': 'Company User'})
+        self.user = User.objects.create_user(
+            username='logout_test_user',
+            email='logout_test@example.com',
+            password='TestPassword123!',
+            role_obj=self.role,
+        )
+
+    def test_access_token_rejected_after_logout(self):
+        """Replaying access token after logout must return HTTP 401 Unauthorized."""
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        # Generate tokens
+        refresh = RefreshToken.for_user(self.user)
+        access_token = str(refresh.access_token)
+
+        # Confirm access token works before logout
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        res_before = self.client.get('/api/auth/me/')
+        self.assertEqual(res_before.status_code, 200)
+
+        # Call logout endpoint
+        import time
+        time.sleep(1)  # Ensure timestamp advances
+        res_logout = self.client.post('/api/auth/logout/', {'refresh': str(refresh)})
+        self.assertEqual(res_logout.status_code, 200)
+
+        # Replay the old access token -> MUST return HTTP 401
+        res_after = self.client.get('/api/auth/me/')
+        self.assertEqual(res_after.status_code, 401)
+        self.assertIn('token_revoked', str(res_after.data))
+

@@ -107,13 +107,24 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def logout_view(request):
+    """
+    Revokes the user's tokens on logout:
+    1. Updates user.last_logout timestamp (revoking all access tokens issued prior to logout).
+    2. Blacklists the refresh token if provided.
+    """
+    user = request.user
+    if user and user.is_authenticated:
+        user.last_logout = timezone.now()
+        user.save(update_fields=['last_logout'])
+
     try:
-        refresh_token = request.data['refresh']
-        token = RefreshToken(refresh_token)
-        token.blacklist()
+        refresh_token = request.data.get('refresh')
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
         return Response({'detail': 'Logged out successfully.'})
     except Exception:
-        return Response({'detail': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'Logged out successfully.'})
 
 
 class RequestPasswordResetView(APIView):

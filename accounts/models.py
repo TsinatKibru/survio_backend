@@ -96,6 +96,7 @@ class User(AbstractUser):
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
     is_onboarded = models.BooleanField(default=False)
+    last_logout = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

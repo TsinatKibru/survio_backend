@@ -171,3 +171,53 @@ class AdminDashboardTests(TestCase):
         self.assertNotIn('<script>', cat.name)
         self.assertEqual(cat.name, 'alert("xss")')
 
+
+class LoginRateLimitTests(TestCase):
+    """Tests for brute-force login rate limiting middleware."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.role, _ = Role.objects.get_or_create(code='superuser', defaults={'name': 'Superuser'})
+        self.user = User(
+            username='rate_test_user',
+            email='rate_test@example.com',
+            role_obj=self.role,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.user.set_password('CorrectPassword123!')
+        self.user.save()
+
+    def test_five_failed_logins_trigger_429_too_many_requests(self):
+        """Making 5 failed login attempts triggers 429 Too Many Requests."""
+        login_url = '/admin/login/'
+        payload = {'username': 'rate_test_user', 'password': 'WrongPassword123!'}
+
+        for _ in range(5):
+            res = self.client.post(login_url, payload)
+            self.assertNotEqual(res.status_code, 429)
+
+        # The 6th attempt must be throttled with 429
+        res_blocked = self.client.post(login_url, payload)
+        self.assertEqual(res_blocked.status_code, 429)
+        self.assertIn('Too Many Requests', res_blocked.content.decode())
+
+    def test_successful_login_resets_rate_limit(self):
+        """A successful login clears the failed attempt cache counter."""
+        login_url = '/admin/login/'
+        wrong_payload = {'username': 'rate_test_user', 'password': 'WrongPassword123!'}
+        correct_payload = {'username': 'rate_test_user', 'password': 'CorrectPassword123!'}
+
+        # 3 failed attempts
+        for _ in range(3):
+            self.client.post(login_url, wrong_payload)
+
+        # Successful login
+        res = self.client.post(login_url, correct_payload)
+        self.assertEqual(res.status_code, 302)
+
+        # Cache should be cleared, allowing next attempt
+        res_after = self.client.post(login_url, wrong_payload)
+        self.assertNotEqual(res_after.status_code, 429)
+

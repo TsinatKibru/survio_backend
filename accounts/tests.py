@@ -261,3 +261,21 @@ class TokenRevocationOnLogoutTests(APITestCase):
         self.assertEqual(res_after.status_code, 401)
         self.assertIn('token_revoked', str(res_after.data))
 
+
+class InputValidationTests(TestCase):
+    """Tests for system-wide input validation middleware (CWE-20)."""
+
+    def test_post_request_with_script_payload_returns_400(self):
+        """Posting a script payload triggers 400 Bad Request."""
+        payload = {'username': '<script>alert("xss")</script>', 'password': 'Password123!'}
+        res = self.client.post('/admin/login/', payload)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Invalid input', res.content.decode())
+
+    def test_json_post_request_with_script_payload_returns_400(self):
+        """Sending JSON containing script tags returns 400 Bad Request."""
+        payload = {'username': 'testuser<iframe src="evil.com"></iframe>', 'password': 'Password123!'}
+        res = self.client.post('/api/auth/login/', payload, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json().get('error'), 'invalid_input')
+

@@ -8,6 +8,7 @@ when DEBUG=False).
 
 
 import secrets
+import re
 
 
 class SecurityHeadersMiddleware:
@@ -90,8 +91,14 @@ class LoginRateLimitMiddleware:
                 except Exception:
                     pass
 
-            ip_key = f'login_attempts_ip_{ip}'
-            user_key = f'login_attempts_user_{username}' if username else None
+            import hashlib
+            ip_hash = hashlib.sha256(ip.encode('utf-8')).hexdigest()
+            ip_key = f'login_attempts_ip_{ip_hash}'
+            if username:
+                user_hash = hashlib.sha256(username.encode('utf-8')).hexdigest()
+                user_key = f'login_attempts_user_{user_hash}'
+            else:
+                user_key = None
 
             ip_attempts = cache.get(ip_key, 0)
             user_attempts = cache.get(user_key, 0) if user_key else 0
@@ -131,5 +138,77 @@ class LoginRateLimitMiddleware:
                     cache.set(user_key, user_attempts + 1, self.LOCKOUT_TIME)
 
             return response
+
+        return self.get_response(request)
+
+
+class InputValidationMiddleware:
+    """
+    System-wide input validation middleware for CWE-20 compliance.
+    Inspects POST, PUT, and PATCH request payloads for malicious script injection,
+    HTML tags, or script payloads. Rejects matching requests with HTTP 400 Bad Request.
+    """
+
+    DANGEROUS_PATTERNS = re.compile(
+        r'<\s*script|<\s*/\s*script|<\s*iframe|<\s*style|javascript:|onerror\s*=|onload\s*=|onclick\s*=|eval\s*\(',
+        re.IGNORECASE
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def _contains_malicious_payload(self, data):
+        if isinstance(data, str):
+            if '<script' in data.lower() or '</script' in data.lower() or 'javascript:' in data.lower():
+                return True
+            if self.DANGEROUS_PATTERNS.search(data):
+                return True
+        elif isinstance(data, dict):
+            for key, val in data.items():
+                if self._contains_malicious_payload(key) or self._contains_malicious_payload(val):
+                    return True
+        elif isinstance(data, list):
+            for item in data:
+                if self._contains_malicious_payload(item):
+                    return True
+        return False
+
+    def __call__(self, request):
+        if request.method in ('POST', 'PUT', 'PATCH'):
+            import json
+            from django.http import HttpResponse, JsonResponse
+
+            has_malicious = False
+
+            # Check form POST parameters
+            for key in request.POST:
+                vals = request.POST.getlist(key)
+                for val in vals:
+                    if self._contains_malicious_payload(val):
+                        has_malicious = True
+                        break
+                if has_malicious:
+                    break
+
+            # Check JSON body if applicable
+            if not has_malicious and request.content_type == 'application/json' and request.body:
+                try:
+                    body_json = json.loads(request.body.decode('utf-8'))
+                    if self._contains_malicious_payload(body_json):
+                        has_malicious = True
+                except Exception:
+                    pass
+
+            if has_malicious:
+                msg = "Invalid input: HTML or script payloads are not allowed."
+                if request.headers.get('accept') == 'application/json' or request.path_info.startswith('/api/'):
+                    return JsonResponse({'detail': msg, 'error': 'invalid_input'}, status=400)
+                return HttpResponse(
+                    f"<!html><html><head><title>400 Bad Request</title></head>"
+                    f"<body style='font-family:sans-serif; padding:50px; text-align:center;'>"
+                    f"<h1>400 Bad Request</h1><p>{msg}</p></body></html>",
+                    status=400,
+                    content_type="text/html"
+                )
 
         return self.get_response(request)

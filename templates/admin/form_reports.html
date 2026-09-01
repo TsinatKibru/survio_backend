@@ -1,0 +1,616 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  #content-main { display: flex; flex-direction: column; gap: 20px; }
+
+  .page-header {
+    display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+
+  /* Filter panel */
+  .filter-panel {
+    padding: 22px 24px;
+    border-radius: 8px;
+    background: var(--darkened-bg, #fff);
+    border: 1px solid var(--hairline-color, #e3e6f0);
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.1);
+    overflow: visible;
+  }
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .filter-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--body-quiet-color, #666);
+    margin-bottom: 6px;
+  }
+  .filter-group select, .filter-group input {
+    width: 100%;
+    height: 40px !important;
+    min-height: 40px !important;
+    line-height: 1.4 !important;
+    padding: 6px 12px !important;
+    border: 1px solid var(--border-color, #d1d3e2);
+    border-radius: 6px;
+    background: var(--body-bg, #fff);
+    color: var(--body-fg, #333);
+    font-size: 13px;
+    box-sizing: border-box !important;
+    appearance: auto;
+    -webkit-appearance: menulist;
+  }
+  .filter-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-top: 4px;
+  }
+
+  .btn-primary {
+    background: var(--primary, #417690); color: #fff; border: none;
+    padding: 9px 20px; border-radius: 5px; cursor: pointer; font-weight: 700;
+    font-size: 13px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px; transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .85; }
+  .btn-secondary {
+    background: transparent; color: var(--primary, #417690);
+    border: 1.5px solid var(--primary, #417690);
+    padding: 8px 18px; border-radius: 5px; cursor: pointer; font-weight: 700;
+    font-size: 13px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
+  }
+  .btn-secondary:hover { background: var(--primary, #417690); color: #fff; }
+  .btn-success {
+    background: #1cc88a; color: #fff; border: none;
+    padding: 8px 18px; border-radius: 5px; cursor: pointer; font-weight: 700;
+    font-size: 13px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-success:hover { opacity: .88; }
+
+  /* Report header */
+  .report-header-card {
+    padding: 22px 26px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary, #417690) 0%, #2c5f75 100%);
+    color: #fff; display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 16px;
+  }
+  .report-header-card h2 { margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: #fff; }
+  .report-header-card .meta { font-size: 12px; opacity: .8; margin-top: 2px; }
+  .stat-pills { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat-pill { text-align: center; }
+  .stat-pill .pill-val { font-size: 28px; font-weight: 800; line-height: 1; color: #fff; }
+  .stat-pill .pill-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; opacity: .75; margin-top: 3px; }
+
+  /* Section block */
+  .section-block {
+    background: var(--darkened-bg, #fff);
+    border: 1px solid var(--hairline-color, #e3e6f0);
+    border-radius: 8px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.08);
+    overflow: hidden;
+  }
+  .section-title-bar {
+    padding: 14px 20px;
+    background: var(--darkened-bg, #f8f9fc);
+    border-bottom: 2px solid var(--primary, #417690);
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; user-select: none;
+  }
+  .section-title-bar h3 {
+    margin: 0; font-size: 14px; font-weight: 700;
+    color: var(--primary, #417690); flex: 1;
+  }
+  .section-title-bar .chevron { transition: transform .2s; opacity: .5; font-size: 12px; }
+
+  /* Question card */
+  .question-card {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--hairline-color, #eee);
+  }
+  .question-card:last-child { border-bottom: none; }
+
+  /* KoboToolbox left accent bar on question label */
+  .question-label-row {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px;
+  }
+  .q-accent {
+    width: 3px; flex-shrink: 0; border-radius: 2px;
+    background: var(--primary, #417690);
+    align-self: stretch; min-height: 18px;
+  }
+  .q-label {
+    flex: 1; font-weight: 700; font-size: 14px;
+    color: var(--primary, #417690); line-height: 1.4;
+  }
+  .type-badge {
+    font-size: 10px; font-weight: 800; padding: 3px 9px;
+    border-radius: 12px; white-space: nowrap; flex-shrink: 0; letter-spacing: .04em;
+  }
+  .type-badge.select    { background: #eaf0fb; color: #3455b3; }
+  .type-badge.number    { background: #e8f8f1; color: #1a7d51; }
+  .type-badge.text      { background: #fef6e4; color: #9a6700; }
+  .type-badge.image     { background: #fde8f5; color: #923177; }
+  .type-badge.yes_no    { background: #eaf0fb; color: #3455b3; }
+  .type-badge.date      { background: #f3ecfb; color: #6a35a8; }
+  .type-badge.multiselect { background: #e4f4fb; color: #1a647d; }
+  .type-badge.default   { background: #f0f0f0; color: #555; }
+
+  .response-meta {
+    font-size: 12px; color: var(--body-quiet-color, #888);
+    margin-bottom: 16px; padding-left: 13px;
+  }
+
+  /* Chart areas */
+  .kobo-question-body { display: flex; flex-direction: column; gap: 14px; }
+  .chart-area { position: relative; width: 100%; }
+  .chart-hbar { min-height: 120px; }
+  .chart-vbar { height: 280px; }
+  .chart-donut { height: 260px; max-width: 320px; margin: 0 auto; }
+
+  /* Frequency table — KoboToolbox dark-header style */
+  .freq-table-kobo { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .freq-table-kobo thead tr { background: #4a5568; color: #fff; }
+  .freq-table-kobo thead th { padding: 10px 16px; text-align: left; font-weight: 700; font-size: 12px; }
+  .freq-table-kobo thead th:nth-child(2),
+  .freq-table-kobo tbody td:nth-child(2) { text-align: right; }
+  .freq-table-kobo thead th:last-child,
+  .freq-table-kobo tbody td:last-child { text-align: right; }
+  .freq-table-kobo tbody tr { border-bottom: 1px solid var(--hairline-color, #eee); }
+  .freq-table-kobo tbody tr:last-child { border-bottom: none; }
+  .freq-table-kobo tbody td { padding: 9px 16px; }
+
+  /* Stats table — KoboToolbox 4-column style */
+  .stats-table-kobo { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .stats-table-kobo thead tr { background: #4a5568; color: #fff; }
+  .stats-table-kobo thead th { padding: 10px 16px; text-align: center; font-weight: 700; font-size: 12px; }
+  .stats-table-kobo tbody td {
+    padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid var(--hairline-color, #eee);
+  }
+
+  /* Misc */
+  .empty-state { text-align: center; padding: 60px 20px; opacity: .55; }
+  .alert-error {
+    padding: 14px 18px; background: #fde8e8;
+    border: 1px solid #f5c6c6; border-radius: 6px; color: #b91c1c; font-size: 13px;
+  }
+  .disclaimer {
+    font-size: 11px; color: var(--body-quiet-color, #888); font-style: italic;
+    padding: 10px 14px; background: var(--darkened-bg, #f8f9fc); border-radius: 6px;
+  }
+</style>
+{% endblock %}
+
+{% block content_title %}
+<h1>Form Summary Reports
+  <span style="font-size:12px;font-weight:400;opacity:.45;margin-left:10px;">Dynamic, on-demand &mdash; KoboToolbox style</span>
+</h1>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+  <!-- Filter panel -->
+  <div class="module filter-panel">
+    <form method="get" id="reportForm">
+      <input type="hidden" name="generate" value="1">
+      <div class="filter-grid">
+
+        <div class="filter-group">
+          <label>&#128203; Form / Survey</label>
+          <select name="form_id" id="formSelect" onchange="this.form.submit()">
+            <option value="">&#8212; Select a Form &#8212;</option>
+            {% for form in forms %}
+            <option value="{{ form.id }}" {% if form_id == form.id|stringformat:"s" %}selected{% endif %}>
+              {{ form.title }}{% if form.category %} ({{ form.category.name }}){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>&#128197; Reporting Period</label>
+          <select name="period_id">
+            <option value="">&#8212; All Periods &#8212;</option>
+            {% for p in periods %}
+            <option value="{{ p.id }}" {% if period_id == p.id|stringformat:"s" %}selected{% endif %}>
+              {{ p.label }} ({{ p.status }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>&#127981; Factory / Industry</label>
+          <select name="industry_id">
+            <option value="">&#8212; All Factories &#8212;</option>
+            {% for ind in industries %}
+            <option value="{{ ind.id }}" {% if industry_id == ind.id|stringformat:"s" %}selected{% endif %}>
+              {{ ind.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn-primary" {% if not form_id %}title="Select a form first" style="opacity:.55;"{% endif %}>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Generate Report
+        </button>
+        {% if report %}
+        <a href="/api/reports/forms/{{ form_id }}/pdf/?{% if period_id %}period_id={{ period_id }}&{% endif %}{% if industry_id %}industry_id={{ industry_id }}{% endif %}"
+           target="_blank" class="btn-secondary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Download PDF
+        </a>
+        <a href="/api/reports/forms/{{ form_id }}/excel/?{% if period_id %}period_id={{ period_id }}&{% endif %}{% if industry_id %}industry_id={{ industry_id }}{% endif %}"
+           class="btn-success">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Download Excel
+        </a>
+        {% endif %}
+      </div>
+
+      {% if not form_id %}
+      <p style="margin:10px 0 0;font-size:12px;color:var(--body-quiet-color,#888);">
+        &#9432; Select a form above to load reporting periods, then click <strong>Generate Report</strong>.
+      </p>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if error %}<div class="alert-error">&#9888; {{ error }}</div>{% endif %}
+
+  {% if not report and not error and not form_id %}
+  <div class="module" style="padding:0;">
+    <div class="empty-state">
+      <div style="font-size:48px;margin-bottom:12px;">&#128203;</div>
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;">Select a Form to Generate a Report</p>
+      <p>Choose a form and optionally filter by period or factory, then click Generate Report.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not report and not error and form_id %}
+  <div class="module" style="padding:0;">
+    <div class="empty-state">
+      <div style="font-size:48px;margin-bottom:12px;">&#9881;&#65039;</div>
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;">{{ selected_form.title }}</p>
+      <p>Set your filters above and click Generate Report to see the analytics.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if report %}
+
+  <!-- Chart data safely encoded by Django -->
+  {{ chart_data|json_script:"chart-data-json" }}
+
+  <!-- Report header -->
+  <div class="report-header-card">
+    <div>
+      <h2>{{ report.form_title }}</h2>
+      <div class="meta">
+        {% if report.category %}Category: {{ report.category }} &nbsp;&middot;&nbsp;{% endif %}
+        Generated: {{ report.generated_at|slice:":10" }}
+        &nbsp;&middot;&nbsp; Filters: {{ report.filters_applied|join:", " }}
+      </div>
+    </div>
+    <div class="stat-pills">
+      <div class="stat-pill">
+        <div class="pill-val">{{ report.total_submissions }}</div>
+        <div class="pill-lbl">Submissions</div>
+      </div>
+      <div class="stat-pill">
+        <div class="pill-val">{{ report.sections|length }}</div>
+        <div class="pill-lbl">Sections</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="disclaimer">
+    &#9888; This is an automated report based on raw data. Please conduct proper data cleaning prior to using these figures.
+  </p>
+
+  {% for section in report.sections %}
+  <div class="module section-block">
+    <div class="section-title-bar" onclick="toggleSection('sec-{{ forloop.counter }}', this)">
+      <h3>{{ section.title }}</h3>
+      {% if section.description %}<span style="font-size:11px;opacity:.6;">{{ section.description }}</span>{% endif %}
+      <span class="chevron">&#9660;</span>
+    </div>
+
+    <div id="sec-{{ forloop.counter }}">
+      {% for q in section.questions %}
+      <div class="question-card">
+
+        <!-- Question label -->
+        <div class="question-label-row">
+          <div class="q-accent"></div>
+          <span class="q-label">{{ q.label }}</span>
+          {% if q.type == "select" or q.type == "yes_no" %}
+            <span class="type-badge select">SELECT_ONE</span>
+          {% elif q.type == "multiselect" %}
+            <span class="type-badge multiselect">SELECT_MULTIPLE</span>
+          {% elif q.type == "number" %}
+            <span class="type-badge number">INTEGER</span>
+          {% elif q.type == "decimal" %}
+            <span class="type-badge number">DECIMAL</span>
+          {% elif q.type == "text" or q.type == "textarea" or q.type == "phone" or q.type == "email" %}
+            <span class="type-badge text">TEXT</span>
+          {% elif q.type == "image" %}
+            <span class="type-badge image">IMAGE</span>
+          {% else %}
+            <span class="type-badge default">{{ q.type|upper }}</span>
+          {% endif %}
+        </div>
+
+        <!-- Response meta line -->
+        <div class="response-meta">
+          TYPE: {% if q.type == "select" or q.type == "yes_no" %}SELECT_ONE{% elif q.type == "multiselect" %}SELECT_MULTIPLE{% elif q.type == "number" %}INTEGER{% elif q.type == "decimal" %}DECIMAL{% else %}{{ q.type|upper }}{% endif %}.
+          {{ q.answered_count }} out of {{ q.total_count }} respondents answered this question.
+          ({{ q.missing_count }} were without data.)
+        </div>
+
+        <div class="kobo-question-body">
+
+          <!-- CATEGORICAL: SELECT_ONE / yes_no / multiselect -->
+          {% if q.choices %}
+          {% if q.answered_count > 0 %}
+
+            {% if q.type == "multiselect" %}
+            <div class="chart-area chart-vbar">
+              <canvas id="chart-{{ q.question_id }}"></canvas>
+            </div>
+            {% elif q.choices|length == 1 %}
+            <div class="chart-area chart-donut">
+              <canvas id="chart-{{ q.question_id }}"></canvas>
+            </div>
+            {% else %}
+            <div class="chart-area chart-hbar">
+              <canvas id="chart-{{ q.question_id }}"></canvas>
+            </div>
+            {% endif %}
+
+            <table class="freq-table-kobo">
+              <thead>
+                <tr><th>Value</th><th>Frequency</th><th>Percentage</th></tr>
+              </thead>
+              <tbody>
+                {% for choice in q.choices %}
+                {% if choice.count > 0 %}
+                <tr>
+                  <td>{{ choice.label }}</td>
+                  <td>{{ choice.count }}</td>
+                  <td>{{ choice.percentage }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+
+          {% else %}
+          <p style="font-size:12px;opacity:.55;font-style:italic;padding-left:13px;">No responses recorded for this question.</p>
+          {% endif %}
+          {% endif %}
+
+          <!-- NUMERIC: number / decimal -->
+          {% if q.stats %}
+          {% if q.stats.valid_count > 0 %}
+          <table class="stats-table-kobo">
+            <thead>
+              <tr>
+                <th>Mean</th><th>Median</th><th>Mode</th><th>Standard deviation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ q.stats.mean }}</td>
+                <td>{{ q.stats.median }}</td>
+                <td>{{ q.stats.mode }}</td>
+                <td>{{ q.stats.std_dev }}</td>
+              </tr>
+            </tbody>
+          </table>
+          {% else %}
+          <p style="font-size:12px;opacity:.55;font-style:italic;padding-left:13px;">No numeric responses recorded.</p>
+          {% endif %}
+          {% endif %}
+
+          <!-- TEXT responses -->
+          {% if q.text_responses %}
+          <table class="freq-table-kobo">
+            <thead>
+              <tr><th>Response</th><th>Frequency</th><th>Percentage</th></tr>
+            </thead>
+            <tbody>
+              {% for resp in q.text_responses %}
+              <tr>
+                <td>{{ resp.value }}</td>
+                <td>{{ resp.count }}</td>
+                <td>{% if q.answered_count > 0 %}{{ resp.count }}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+
+          <!-- IMAGE / MEDIA -->
+          {% if q.upload_count is not None %}
+          <p style="font-size:13px;color:var(--body-quiet-color);padding-left:13px;">
+            &#128206; {{ q.upload_count }} file{{ q.upload_count|pluralize }} uploaded
+          </p>
+          {% endif %}
+
+        </div>
+      </div>
+      {% empty %}
+      <div style="padding:30px;text-align:center;opacity:.5;font-size:13px;">No questions in this section.</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% endif %}
+
+</div>
+
+<script nonce="{{ csp_nonce }}">
+// Section collapse
+function toggleSection(id, header) {
+  var body = document.getElementById(id);
+  var chevron = header.querySelector('.chevron');
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+  } else {
+    body.style.display = 'none';
+    if (chevron) chevron.style.transform = 'rotate(-90deg)';
+  }
+}
+
+// KoboToolbox colour palette
+var KOBO_COLORS = [
+  '#4472C4','#E8734A','#F4BE00','#70AD47','#44A4C4',
+  '#FF8C00','#9B59B6','#1ABC9C','#E74C3C','#3498DB',
+  '#F39C12','#2ECC71','#E91E63','#00BCD4','#8BC34A',
+  '#FF5722','#607D8B','#9C27B0','#FF9800','#795548'
+];
+function colorFor(i) { return KOBO_COLORS[i % KOBO_COLORS.length]; }
+
+// Build charts from safely-serialized context data
+document.addEventListener('DOMContentLoaded', function () {
+  var dataEl = document.getElementById('chart-data-json');
+  if (!dataEl) return;
+
+  var chartData;
+  try { chartData = JSON.parse(dataEl.textContent); }
+  catch (e) { console.error('Chart data parse error:', e); return; }
+
+  // chartData: { "<question_id>": {type, labels, counts}, ... }
+  Object.keys(chartData).forEach(function (qid) {
+    var q      = chartData[qid];
+    var canvas = document.getElementById('chart-' + qid);
+    if (!canvas) return;
+
+    var labels = q.labels;
+    var counts = q.counts;
+    var total  = counts.reduce(function(a, b){ return a + b; }, 0);
+    if (total === 0) { canvas.parentElement.style.display = 'none'; return; }
+
+    var colors = labels.map(function(_, i){ return colorFor(i); });
+
+    if (q.type === 'multiselect') {
+      renderVerticalBar(canvas, labels, counts, colors, total);
+    } else {
+      // Count how many options actually have responses
+      var activeCount = counts.filter(function(c){ return c > 0; }).length;
+      if (activeCount <= 2 && labels.length <= 2) {
+        // Few options with data — use donut (KoboToolbox fallback)
+        renderDonut(canvas, labels, counts, colors, total);
+      } else {
+        // Many options — horizontal bar (primary KoboToolbox style)
+        renderHorizontalBar(canvas, labels, counts, colors, total);
+      }
+    }
+  });
+});
+
+function renderHorizontalBar(canvas, labels, counts, colors, total) {
+  var barH = Math.max(30, Math.min(50, 320 / labels.length));
+  canvas.parentElement.style.height = (barH * labels.length + 60) + 'px';
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ data: counts, backgroundColor: colors, borderRadius: 3, barThickness: barH - 10 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) {
+          var pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(2) : 0;
+          return '  ' + ctx.raw + '  (' + pct + '%)';
+        }}}
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 },
+          callback: function(val, idx) {
+            var lbl = this.getLabelForValue(idx);
+            return lbl && lbl.length > 28 ? lbl.slice(0, 26) + '\u2026' : lbl;
+          }
+        }}
+      }
+    }
+  });
+}
+
+function renderVerticalBar(canvas, labels, counts, colors, total) {
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ data: counts, backgroundColor: colors, borderRadius: 4,
+      barThickness: Math.max(28, Math.min(60, 300 / Math.max(labels.length, 1))) }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) {
+          var pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(2) : 0;
+          return '  ' + ctx.raw + '  (' + pct + '%)';
+        }}}
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 20,
+          callback: function(val, idx) {
+            var lbl = this.getLabelForValue(idx);
+            return lbl && lbl.length > 22 ? lbl.slice(0, 20) + '\u2026' : lbl;
+          }
+        }}
+      }
+    }
+  });
+}
+
+function renderDonut(canvas, labels, counts, colors, total) {
+  new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: labels, datasets: [{ data: counts, backgroundColor: colors, borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12, padding: 8 } },
+        tooltip: { callbacks: { label: function(ctx) {
+          var pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(2) : 0;
+          return '  ' + ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+        }}}
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

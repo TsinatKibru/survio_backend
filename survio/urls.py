@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/auth/', include('accounts.urls')),
     path('api/forms/', include('forms_builder.urls')),
     path('api/submissions/', include('submissions.urls')),
+    path('api/reports/', include('reports.urls')),
     path('api/notifications/', include('notifications.urls')),
     path('api/ads/', include('ads.urls')),
     # Swagger

@@ -100,6 +100,11 @@ class SurvioAdminSite(admin.AdminSite):
                 self.admin_view(self.data_comparison_chart_view),
                 name='data-comparison-chart',
             ),
+            path(
+                'form-reports/',
+                self.admin_view(self.form_reports_view),
+                name='form-reports',
+            ),
         ]
         return custom_urls + urls
 
@@ -882,6 +887,78 @@ class SurvioAdminSite(admin.AdminSite):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         wb.save(response)
         return response
+
+    def form_reports_view(self, request):
+        """Dynamic Form Summary Report — KoboToolbox-style, enhanced."""
+        import json as _json
+        from forms_builder.models import Form, ReportingPeriod
+        from accounts.models import Industry, Category
+        from reports.services import FormReportBuilder
+        from django.utils import timezone
+
+        forms = Form.objects.filter(is_active=True).prefetch_related('periods', 'category')
+        categories = Category.objects.filter(is_active=True).order_by('name')
+        industries = Industry.objects.filter(is_active=True).order_by('name')
+
+        # Selected filters
+        form_id = request.GET.get('form_id')
+        period_id = request.GET.get('period_id')
+        industry_id = request.GET.get('industry_id')
+        category_id = request.GET.get('category_id')
+
+        report = None
+        selected_form = None
+        periods = []
+        error = None
+
+        if form_id:
+            try:
+                selected_form = Form.objects.get(pk=form_id)
+                periods = list(selected_form.periods.order_by('-period_start'))
+                # Only build report when user explicitly asks
+                if request.GET.get('generate') == '1':
+                    builder = FormReportBuilder()
+                    report = builder.build(
+                        form_id=int(form_id),
+                        period_id=int(period_id) if period_id else None,
+                        industry_id=int(industry_id) if industry_id else None,
+                        category_id=int(category_id) if category_id else None,
+                    )
+            except Form.DoesNotExist:
+                error = f'Form with ID {form_id} not found.'
+            except Exception as e:
+                error = str(e)
+
+        # Pre-extract chart data for safe JSON encoding via json_script
+        # dict: str(question_id) -> {type, labels, counts}
+        chart_data = {}
+        if report:
+            for section in report['sections']:
+                for q in section['questions']:
+                    if q.get('choices'):
+                        chart_data[str(q['question_id'])] = {
+                            'type': q['type'],
+                            'labels': [c['label'] for c in q['choices']],
+                            'counts': [c['count'] for c in q['choices']],
+                        }
+
+        context = {
+            **self.each_context(request),
+            'title': 'Form Summary Reports',
+            'forms': forms,
+            'categories': categories,
+            'industries': industries,
+            'selected_form': selected_form,
+            'periods': periods,
+            'report': report,
+            'chart_data': chart_data,
+            'error': error,
+            'form_id': form_id or '',
+            'period_id': period_id or '',
+            'industry_id': industry_id or '',
+            'category_id': category_id or '',
+        }
+        return render(request, 'admin/form_reports.html', context)
 
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}

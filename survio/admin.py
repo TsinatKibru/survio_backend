@@ -942,6 +942,14 @@ class SurvioAdminSite(admin.AdminSite):
                             'counts': [c['count'] for c in q['choices']],
                         }
 
+        # Build lookup dictionary of form_id -> list of periods for instant client-side dropdown updates
+        form_periods_map = {}
+        for f in forms:
+            form_periods_map[str(f.id)] = [
+                {'id': p.id, 'label': p.label, 'status': p.status}
+                for p in f.periods.order_by('-period_start')
+            ]
+
         context = {
             **self.each_context(request),
             'title': 'Form Summary Reports',
@@ -950,6 +958,7 @@ class SurvioAdminSite(admin.AdminSite):
             'industries': industries,
             'selected_form': selected_form,
             'periods': periods,
+            'form_periods_map': form_periods_map,
             'report': report,
             'chart_data': chart_data,
             'error': error,

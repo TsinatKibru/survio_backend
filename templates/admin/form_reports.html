@@ -204,6 +204,9 @@
 {% block content %}
 <div id="content-main">
 
+  <!-- Form Periods Map for instant client-side updates -->
+  {{ form_periods_map|json_script:"form-periods-map-json" }}
+
   <!-- Filter panel -->
   <div class="module filter-panel">
     <form method="get" id="reportForm">
@@ -212,7 +215,7 @@
 
         <div class="filter-group">
           <label>&#128203; Form / Survey</label>
-          <select name="form_id" id="formSelect" onchange="this.form.submit()">
+          <select name="form_id" id="formSelect">
             <option value="">&#8212; Select a Form &#8212;</option>
             {% for form in forms %}
             <option value="{{ form.id }}" {% if form_id == form.id|stringformat:"s" %}selected{% endif %}>
@@ -224,7 +227,7 @@
 
         <div class="filter-group">
           <label>&#128197; Reporting Period</label>
-          <select name="period_id">
+          <select name="period_id" id="periodSelect">
             <option value="">&#8212; All Periods &#8212;</option>
             {% for p in periods %}
             <option value="{{ p.id }}" {% if period_id == p.id|stringformat:"s" %}selected{% endif %}>
@@ -502,6 +505,58 @@ var KOBO_COLORS = [
   '#FF5722','#607D8B','#9C27B0','#FF9800','#795548'
 ];
 function colorFor(i) { return KOBO_COLORS[i % KOBO_COLORS.length]; }
+
+// Dynamic period dropdown updater
+document.addEventListener('DOMContentLoaded', function () {
+  var periodsDataEl = document.getElementById('form-periods-map-json');
+  var formSelect = document.getElementById('formSelect');
+  var periodSelect = document.getElementById('periodSelect');
+  var reportForm = document.getElementById('reportForm');
+
+  var periodsMap = {};
+  if (periodsDataEl) {
+    try { periodsMap = JSON.parse(periodsDataEl.textContent); }
+    catch (e) { console.error('Error parsing periods map:', e); }
+  }
+
+  function updatePeriods(selectedPeriodId) {
+    if (!formSelect || !periodSelect) return;
+    var formId = formSelect.value;
+    var currentVal = selectedPeriodId || periodSelect.value;
+
+    periodSelect.innerHTML = '<option value="">&#8212; All Periods &#8212;</option>';
+
+    if (formId && periodsMap[formId] && periodsMap[formId].length > 0) {
+      periodsMap[formId].forEach(function (p) {
+        var opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.label + ' (' + p.status + ')';
+        if (String(p.id) === String(currentVal)) {
+          opt.selected = true;
+        }
+        periodSelect.appendChild(opt);
+      });
+    }
+  }
+
+  if (formSelect) {
+    formSelect.addEventListener('change', function () {
+      updatePeriods('');
+    });
+    // Populate on initial page load (preserving current GET period_id)
+    var initialPeriodId = "{{ period_id }}";
+    updatePeriods(initialPeriodId);
+  }
+
+  if (reportForm) {
+    reportForm.addEventListener('submit', function (e) {
+      if (formSelect && !formSelect.value) {
+        e.preventDefault();
+        alert('Please select a Form / Survey first.');
+      }
+    });
+  }
+});
 
 // Build charts from safely-serialized context data
 document.addEventListener('DOMContentLoaded', function () {
